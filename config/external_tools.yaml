@@ -1,0 +1,47 @@
+# External Tools Configuration
+# Validates: Requirements 10.1, 10.2, 10.3
+
+tools:
+  # Technical Analysis Tool (Example)
+  - name: "technical_analyzer"
+    source_type: "github"
+    source_url: "https://github.com/example/ta-tool.git"
+    integration_method: "import"
+    entry_point: "ta_tool.analyze"
+    risk_warning: "This tool performs technical analysis calculations on market data"
+    timeout: 30
+    enabled: false  # Disabled by default
+    parameters:
+      indicators: ["RSI", "MACD", "Bollinger Bands"]
+    
+  # Sentiment Analysis Tool (Example)
+  - name: "sentiment_scorer"
+    source_type: "local"
+    source_path: "/opt/tools/sentiment"
+    integration_method: "command_line"
+    command_template: "python sentiment.py --text '{text}' --output json"
+    risk_warning: "This tool uses external NLP models for sentiment analysis"
+    timeout: 60
+    enabled: false  # Disabled by default
+    
+  # Custom Indicator Calculator (Example)
+  - name: "custom_indicator"
+    source_type: "local"
+    source_path: "/opt/tools/indicators"
+    integration_method: "import"
+    entry_point: "indicators.calculate"
+    risk_warning: "This tool calculates custom trading indicators"
+    timeout: 30
+    enabled: false  # Disabled by default
+
+# Security settings
+security:
+  allowed_file_extensions: [".py", ".sh", ".js"]
+  blocked_patterns:
+    - "rm -rf"
+    - "eval("
+    - "exec("
+    - "__import__"
+    - "subprocess.Popen"
+  max_tool_execution_time: 120  # seconds
+  sandbox_enabled: true

@@ -1,0 +1,231 @@
+# LLM Provider Configuration
+# Validates: Requirements 4.1, 4.2, 4.3
+
+providers:
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    base_url: "https://api.openai.com/v1"
+    models:
+      - name: "gpt-4-turbo-preview"
+        display_name: "GPT-4 Turbo"
+        type: "pro"  # fast 或 pro
+        max_tokens: 4096
+        temperature: 0.7
+        context_window: 128000
+        cost_per_1k_tokens: 0.01  # 成本参考
+      - name: "gpt-3.5-turbo"
+        display_name: "GPT-3.5 Turbo"
+        type: "fast"  # fast 或 pro
+        max_tokens: 4096
+        temperature: 0.7
+        context_window: 16385
+        cost_per_1k_tokens: 0.002
+    rate_limit:
+      requests_per_minute: 60
+      tokens_per_minute: 90000
+    timeout: 30
+    
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    base_url: "https://api.anthropic.com"
+    models:
+      - name: "claude-3-opus-20240229"
+        display_name: "Claude 3 Opus"
+        type: "pro"
+        max_tokens: 4096
+        temperature: 0.7
+        context_window: 200000
+        cost_per_1k_tokens: 0.015
+      - name: "claude-3-sonnet-20240229"
+        display_name: "Claude 3 Sonnet"
+        type: "fast"
+        max_tokens: 4096
+        temperature: 0.7
+        context_window: 200000
+        cost_per_1k_tokens: 0.003
+      - name: "claude-3-haiku-20240307"
+        display_name: "Claude 3 Haiku"
+        type: "fast"
+        max_tokens: 4096
+        temperature: 0.7
+        context_window: 200000
+        cost_per_1k_tokens: 0.00025
+    rate_limit:
+      requests_per_minute: 50
+      tokens_per_minute: 40000
+    timeout: 30
+    
+  local:
+    base_url: "${LOCAL_LLM_URL}"
+    models:
+      - name: "llama-3-70b"
+        display_name: "Llama 3 70B"
+        type: "pro"
+        max_tokens: 4096
+        temperature: 0.7
+        context_window: 8192
+        cost_per_1k_tokens: 0  # 本地模型无成本
+      - name: "llama-3-8b"
+        display_name: "Llama 3 8B"
+        type: "fast"
+        max_tokens: 4096
+        temperature: 0.7
+        context_window: 8192
+        cost_per_1k_tokens: 0
+    rate_limit:
+      requests_per_minute: 100
+      tokens_per_minute: 100000
+    timeout: 60
+
+# Primary provider and fallback chain
+primary_provider: "openai"
+fallback_chain: ["anthropic", "local"]
+
+# Default model configuration (统一默认模型配置)
+# 所有需要使用 LLM 的功能都会引用这个默认配置
+# 用户只需修改这里，就能统一更改所有模块使用的模型
+default_model:
+  provider: "openai"  # openai, anthropic, local
+  model: "gpt-3.5-turbo"  # 默认使用的模型名称
+  max_tokens: 4096
+  temperature: 0.7
+  
+  # 特定用途可以覆盖默认配置
+  overrides:
+    # 翻译任务使用更低的 temperature 以获得更稳定的结果
+    translation:
+      temperature: 0.3
+      max_tokens: 500
+    
+    # 分析任务可能需要更高的 token 限制
+    analysis:
+      temperature: 0.7
+      max_tokens: 4096
+    
+    # 摘要任务
+    summarization:
+      temperature: 0.5
+      max_tokens: 1000
+
+# 自动模型选择策略
+# 当用户使用 /llm auto 时，系统会根据以下策略自动选择模型
+auto_selection:
+  enabled: true
+  
+  # 选择策略
+  strategy: "adaptive"  # adaptive, cost_optimized, performance_optimized
+  
+  # 自适应策略配置
+  adaptive:
+    # 根据任务复杂度选择模型
+    # 简单任务（如翻译、摘要）使用 fast 模型
+    # 复杂任务（如深度分析、代码生成）使用 pro 模型
+    simple_tasks:
+      - "translation"
+      - "summarization"
+      - "keyword_extraction"
+    complex_tasks:
+      - "analysis"
+      - "code_generation"
+      - "reasoning"
+    
+    # 根据输入长度选择模型
+    # 短文本使用 fast 模型，长文本使用 pro 模型
+    length_threshold: 1000  # 字符数
+    
+    # 根据时间选择模型
+    # 工作时间使用 fast 模型（快速响应）
+    # 非工作时间使用 pro 模型（深度分析）
+    time_based:
+      enabled: false
+      work_hours:
+        start: "09:00"
+        end: "18:00"
+      timezone: "Asia/Shanghai"
+  
+  # 成本优化策略
+  cost_optimized:
+    # 优先使用成本最低的模型
+    prefer_fast: true
+    # 只在必要时使用 pro 模型
+    pro_threshold: 0.8  # 任务复杂度阈值
+  
+  # 性能优化策略
+  performance_optimized:
+    # 优先使用性能最好的模型
+    prefer_pro: true
+    # 只在简单任务时使用 fast 模型
+    fast_threshold: 0.3  # 任务复杂度阈值
+
+# Cross-validation settings (optional)
+cross_validation:
+  enabled: false
+  models: 
+    - provider: "openai"
+      model: "gpt-4-turbo-preview"
+    - provider: "anthropic"
+      model: "claude-3-opus-20240229"
+  voting_strategy: "majority"  # majority, weighted, unanimous
+  min_agreement_threshold: 0.7
+
+# Analysis settings
+analysis:
+  relevance_score_threshold: 70  # Minimum score to publish as high-value signal
+  max_context_items: 5  # Number of historical items to retrieve from vector DB
+  context_retrieval_timeout: 0.5  # seconds
+
+# Translation settings
+translation:
+  # 是否启用翻译功能
+  enabled: true
+  
+  # 翻译提供商（使用 default_model 配置，也可以单独指定）
+  # 如果设置为 "default"，则使用 default_model 配置
+  # 如果设置为具体的 provider，则使用该 provider
+  provider: "default"  # default, openai, anthropic, deepl, google
+  
+  # 如果 provider 不是 "default"，可以指定具体的模型
+  # 如果为空，则使用 default_model.overrides.translation 配置
+  model: ""  # 留空表示使用默认配置
+  
+  # 默认输出语言
+  default_output_language: "en"  # en, zh, auto (根据用户设置)
+  
+  # OpenAI翻译配置（仅当 provider 为 "openai" 时使用）
+  openai:
+    model: ""  # 留空表示使用 default_model 配置
+    max_tokens: 500
+    temperature: 0.3
+    system_prompt: "You are a professional financial translator. Translate the following text accurately while preserving financial terminology and context."
+  
+  # Anthropic翻译配置（仅当 provider 为 "anthropic" 时使用）
+  anthropic:
+    model: ""  # 留空表示使用 default_model 配置
+    max_tokens: 500
+    temperature: 0.3
+    system_prompt: "You are a professional financial translator. Translate the following text accurately while preserving financial terminology and context."
+  
+  # 翻译选项
+  options:
+    # 是否保留原文
+    include_original: true
+    
+    # 是否翻译技术术语
+    translate_technical_terms: false
+    
+    # 是否添加翻译注释
+    add_translation_notes: false
+    
+    # 翻译格式
+    output_format: "markdown"  # plain, markdown, json
+  
+  # 缓存设置
+  cache:
+    enabled: true
+    ttl: 86400  # 24 hours
+    max_size: 10000  # Maximum number of cached translations
+  
+  # 语言检测
+  language_detection:
+    enabled: true
+    confidence_threshold: 0.8  # Minimum confidence to auto-detect language

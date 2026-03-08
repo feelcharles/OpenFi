@@ -1,0 +1,135 @@
+# Alerting Configuration
+# Validates: Requirements 36.3, 36.5, 36.6
+
+# Alert notification settings
+alerting:
+  # Enable/disable alerting system
+  enabled: true
+  
+  # Deduplication window in seconds (default: 300 = 5 minutes)
+  # Maximum 1 alert per condition per component within this window
+  deduplication_window_seconds: 300
+  
+  # PagerDuty integration
+  pagerduty:
+    enabled: false
+    integration_key: "${PAGERDUTY_INTEGRATION_KEY}"
+    # Optional custom webhook URL (uses default if not specified)
+    webhook_url: null
+  
+  # Opsgenie integration
+  opsgenie:
+    enabled: false
+    api_key: "${OPSGENIE_API_KEY}"
+    # Optional custom webhook URL (uses default if not specified)
+    webhook_url: null
+  
+  # Slack integration
+  slack:
+    enabled: false
+    webhook_url: "${SLACK_ALERT_WEBHOOK_URL}"
+  
+  # Runbook URLs for different alert conditions
+  # These are included in alert notifications for quick reference
+  runbooks:
+    high_error_rate: "https://docs.openfi.io/runbooks/high-error-rate"
+    low_success_rate: "https://docs.openfi.io/runbooks/low-success-rate"
+    high_latency: "https://docs.openfi.io/runbooks/high-latency"
+    circuit_breaker_triggered: "https://docs.openfi.io/runbooks/circuit-breaker"
+    queue_depth_exceeded: "https://docs.openfi.io/runbooks/queue-depth"
+    service_down: "https://docs.openfi.io/runbooks/service-down"
+  
+  # Alert thresholds (used by application code)
+  thresholds:
+    # Error rate threshold (0.05 = 5%)
+    error_rate: 0.05
+    
+    # Success rate threshold (0.90 = 90%)
+    success_rate: 0.90
+    
+    # Latency threshold in seconds
+    latency_seconds: 5.0
+    
+    # Queue depth thresholds
+    queue_depth_warning: 8000
+    queue_depth_critical: 9500
+    queue_depth_max: 10000
+    
+    # Circuit breaker thresholds
+    circuit_breaker:
+      max_consecutive_losses: 3
+      max_consecutive_failures: 5
+      cooldown_period_seconds: 300
+  
+  # Alert notification format
+  notification:
+    # Include these fields in all alerts (Requirement 36.5)
+    include_fields:
+      - severity
+      - component
+      - condition
+      - message
+      - timestamp
+      - metadata
+      - runbook_url
+    
+    # Timezone for timestamp display
+    timezone: "UTC"
+    
+    # Retry settings for failed notifications
+    retry:
+      max_attempts: 3
+      initial_delay_seconds: 1
+      backoff_multiplier: 2.0
+      max_delay_seconds: 30
+
+# Alert routing rules (optional)
+# Route specific alerts to specific channels
+routing:
+  # Critical alerts go to PagerDuty
+  - severity: critical
+    channels:
+      - pagerduty
+      - slack
+  
+  # Error alerts go to Opsgenie and Slack
+  - severity: error
+    channels:
+      - opsgenie
+      - slack
+  
+  # Warning alerts go to Slack only
+  - severity: warning
+    channels:
+      - slack
+  
+  # Info alerts are logged but not sent to external systems
+  - severity: info
+    channels: []
+
+# Component-specific alert settings
+components:
+  fetch_engine:
+    enabled: true
+    min_severity: warning
+  
+  ai_engine:
+    enabled: true
+    min_severity: warning
+  
+  execution_engine:
+    enabled: true
+    min_severity: warning
+  
+  event_bus:
+    enabled: true
+    min_severity: warning
+  
+  user_center:
+    enabled: true
+    min_severity: warning
+  
+  database:
+    enabled: true
+    min_severity: error
+

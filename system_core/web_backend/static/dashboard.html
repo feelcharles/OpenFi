@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenFi Lite Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #60a5fa;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status.healthy {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status.degraded {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .status.unhealthy {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            color: #60a5fa;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 10px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            color: #94a3b8;
+        }
+        
+        .metric-value {
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+        
+        .signal-item, .trade-item {
+            background: #334155;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .signal-item h3, .trade-item h3 {
+            color: #60a5fa;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .signal-score {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        .score-high {
+            background: #10b981;
+            color: white;
+        }
+        
+        .score-medium {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .score-low {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .timestamp {
+            color: #64748b;
+            font-size: 12px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1e293b;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-left: 4px solid #60a5fa;
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+            z-index: 1000;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .ws-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .ws-connected {
+            background: #10b981;
+        }
+        
+        .ws-disconnected {
+            background: #ef4444;
+        }
+        
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background: #2563eb;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OpenFi Lite Dashboard</h1>
+            <p>
+                <span class="ws-status" id="wsStatus"></span>
+                <span id="wsStatusText">Connecting...</span>
+                <span class="status healthy" id="systemStatus">Loading...</span>
+            </p>
+        </header>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>System Metrics</h2>
+                <div id="metrics">
+                    <div class="loading">Loading metrics...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Today's Performance</h2>
+                <div id="performance">
+                    <div class="loading">Loading performance...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>Recent Signals</h2>
+                <div id="signals">
+                    <div class="loading">Loading signals...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Recent Trades</h2>
+                <div id="trades">
+                    <div class="loading">Loading trades...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notifications"></div>
+    
+    <script>
+        const API_BASE = window.location.origin;
+        const WS_URL = `ws://${window.location.host}/ws/notifications`;
+        
+        let ws = null;
+        let reconnectTimeout = null;
+        
+        // WebSocket connection
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                updateWSStatus(true);
+                
+                // Send keepalive ping every 30 seconds
+                setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleWebSocketMessage(message);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateWSStatus(false);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                updateWSStatus(false);
+                
+                // Reconnect after 5 seconds
+                reconnectTimeout = setTimeout(connectWebSocket, 5000);
+            };
+        }
+        
+        function updateWSStatus(connected) {
+            const statusEl = document.getElementById('wsStatus');
+            const textEl = document.getElementById('wsStatusText');
+            
+            if (connected) {
+                statusEl.className = 'ws-status ws-connected';
+                textEl.textContent = 'Real-time updates active';
+            } else {
+                statusEl.className = 'ws-status ws-disconnected';
+                textEl.textContent = 'Disconnected';
+            }
+        }
+        
+        function handleWebSocketMessage(message) {
+            console.log('WebSocket message:', message);
+            
+            switch (message.type) {
+                case 'signal':
+                    showNotification('New Signal', message.data.summary);
+                    loadSignals();
+                    loadMetrics();
+                    break;
+                case 'trade':
+                    showNotification('Trade Executed', `${message.data.direction} ${message.data.symbol}`);
+                    loadTrades();
+                    loadMetrics();
+                    break;
+                case 'system_event':
+                    showNotification('System Event', message.data.message);
+                    break;
+            }
+        }
+        
+        function showNotification(title, message) {
+            const container = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `<strong>${title}</strong><br>${message}`;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+        // API calls
+        async function loadMetrics() {
+            try {
+                const response = await fetch(`${API_BASE}/api/dashboard/metrics`);
+                const data = await response.json();
+                
+                document.getElementById('metrics').innerHTML = `
+                    <div class="metric">
+                        <span class="metric-label">Active Data Sources</span>
+                        <span class="metric-value">${data.active_data_sources}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Fetch Success Rate</span>
+                        <span class="metric-value">${data.fetch_success_rate}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Active Positions</span>
+                        <span class="metric-value">${data.active_positions}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Account Balance</span>
+                        <span class="metric-value">$${data.account_balance.toLocaleString()}</span>
+                    </div>
+                `;
+                
+                document.getElementById('performance').innerHTML = `
+                    <div class="metric">
+                        <span class="metric-label">Signals Today</span>
+                        <span class="metric-value">${data.signals_today}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">High-Value Signals</span>
+                        <span class="metric-value">${data.high_value_signals_today}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Trades Today</span>
+                        <span class="metric-value">${data.trades_today}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Win Rate</span>
+                        <span class="metric-value">${data.win_rate_today}%</span>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Failed to load metrics:', error);
+            }
+        }
+        
+        async function loadSignals() {
+            try {
+                const response = await fetch(`${API_BASE}/api/dashboard/recent-signals?limit=5`);
+                const signals = await response.json();
+                
+                if (signals.length === 0) {
+                    document.getElementById('signals').innerHTML = '<p class="loading">No recent signals</p>';
+                    return;
+                }
+                
+                const html = signals.map(signal => {
+                    const scoreClass = signal.relevance_score >= 80 ? 'score-high' : 
+                                      signal.relevance_score >= 60 ? 'score-medium' : 'score-low';
+                    
+                    return `
+                        <div class="signal-item">
+                            <h3>
+                                <span class="signal-score ${scoreClass}">${signal.relevance_score}</span>
+                                ${signal.source}
+                            </h3>
+                            <p>${signal.summary}</p>
+                            <p class="timestamp">${new Date(signal.created_at).toLocaleString()}</p>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('signals').innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load signals:', error);
+            }
+        }
+        
+        async function loadTrades() {
+            try {
+                const response = await fetch(`${API_BASE}/api/trades?limit=5`);
+                const trades = await response.json();
+                
+                if (trades.length === 0) {
+                    document.getElementById('trades').innerHTML = '<p class="loading">No recent trades</p>';
+                    return;
+                }
+                
+                const html = trades.map(trade => {
+                    const profitClass = trade.profit > 0 ? 'score-high' : 
+                                       trade.profit < 0 ? 'score-low' : 'score-medium';
+                    
+                    return `
+                        <div class="trade-item">
+                            <h3>
+                                ${trade.direction.toUpperCase()} ${trade.symbol}
+                                ${trade.profit !== null ? `<span class="signal-score ${profitClass}">$${trade.profit.toFixed(2)}</span>` : ''}
+                            </h3>
+                            <p>Volume: ${trade.volume} | Entry: ${trade.entry_price} | Status: ${trade.status}</p>
+                            <p class="timestamp">${new Date(trade.created_at).toLocaleString()}</p>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('trades').innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load trades:', error);
+            }
+        }
+        
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/dashboard/system-status`);
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('systemStatus');
+                statusEl.textContent = data.status.toUpperCase();
+                statusEl.className = `status ${data.status}`;
+            } catch (error) {
+                console.error('Failed to load system status:', error);
+            }
+        }
+        
+        // Initialize
+        connectWebSocket();
+        loadMetrics();
+        loadSignals();
+        loadTrades();
+        loadSystemStatus();
+        
+        // Auto-refresh every 10 seconds
+        setInterval(() => {
+            loadMetrics();
+            loadSignals();
+            loadTrades();
+            loadSystemStatus();
+        }, 10000);
+    </script>
+</body>
+</html>

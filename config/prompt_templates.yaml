@@ -1,0 +1,208 @@
+# LLM Prompt Templates Configuration
+# LLM 提示词模板配置文件
+
+templates:
+  # Economic Event Analysis Template
+  - data_type: economic_event
+    template_name: economic_event_analysis
+    system_prompt: |
+      You are a professional financial analyst specializing in economic data interpretation.
+      Analyze the provided economic event and assess its potential market impact.
+      Provide your analysis in strict JSON format.
+    user_prompt_template: |
+      Economic Event: {{event_name}}
+      Country: {{country}}
+      Impact Level: {{impact}}
+      Forecast: {{forecast}}
+      Previous: {{previous}}
+      Actual: {{actual}}
+      
+      User Context:
+      - Trading Symbols: {{trading_symbols}}
+      - Risk Tolerance: {{risk_tolerance}}
+      - Active EAs: {{active_eas}}
+      
+      Provide analysis in JSON format:
+      {
+        "relevance_score": 0-100,
+        "potential_impact": "low|medium|high",
+        "summary": "Brief summary of the event and its implications",
+        "suggested_actions": ["action1", "action2"],
+        "related_symbols": ["EURUSD", "GBPUSD"]
+      }
+    required_context:
+      - event_name
+      - country
+      - trading_symbols
+    conditional_sections: {}
+  
+  # News Article Analysis Template
+  - data_type: news_article
+    template_name: news_analysis
+    system_prompt: |
+      You are a financial news analyst. Assess the trading relevance of news articles.
+      Focus on actionable insights for traders.
+    user_prompt_template: |
+      News Article:
+      Title: {{title}}
+      Source: {{source}}
+      Published: {{published_at}}
+      Content: {{content}}
+      
+      User Context:
+      - Trading Symbols: {{trading_symbols}}
+      - Risk Tolerance: {{risk_tolerance}}
+      
+      Provide analysis in JSON format:
+      {
+        "relevance_score": 0-100,
+        "potential_impact": "low|medium|high",
+        "summary": "Key takeaways from the article",
+        "suggested_actions": ["action1", "action2"],
+        "related_symbols": ["EURUSD"]
+      }
+    required_context:
+      - title
+      - content
+      - trading_symbols
+    conditional_sections: {}
+  
+  # Market Data Analysis Template
+  - data_type: market_data
+    template_name: market_data_analysis
+    system_prompt: |
+      You are a technical analyst. Analyze market price data and identify trading opportunities.
+    user_prompt_template: |
+      Market Data:
+      Symbol: {{symbol}}
+      Timeframe: {{timeframe}}
+      Current Price: {{current_price}}
+      Change: {{price_change}}%
+      Volume: {{volume}}
+      
+      Technical Indicators:
+      {{#if has_indicators}}
+      - RSI: {{rsi}}
+      - MACD: {{macd}}
+      - Moving Averages: {{moving_averages}}
+      {{/if}}
+      
+      User Context:
+      - Trading Symbols: {{trading_symbols}}
+      - Risk Tolerance: {{risk_tolerance}}
+      
+      Provide analysis in JSON format:
+      {
+        "relevance_score": 0-100,
+        "potential_impact": "low|medium|high",
+        "summary": "Market analysis and trend assessment",
+        "suggested_actions": ["action1", "action2"],
+        "related_symbols": ["{{symbol}}"]
+      }
+    required_context:
+      - symbol
+      - current_price
+      - trading_symbols
+    conditional_sections:
+      has_indicators:
+        - rsi
+        - macd
+  
+  # Social Media Post Analysis Template
+  - data_type: social_media_post
+    template_name: social_media_analysis
+    system_prompt: |
+      You are a sentiment analyst. Analyze social media posts for market sentiment and trading signals.
+      Be cautious of misinformation and hype.
+    user_prompt_template: |
+      Social Media Post:
+      Platform: {{platform}}
+      Author: {{author}}
+      Followers: {{followers}}
+      Content: {{content}}
+      Engagement: {{likes}} likes, {{retweets}} retweets
+      
+      User Context:
+      - Trading Symbols: {{trading_symbols}}
+      
+      Provide analysis in JSON format:
+      {
+        "relevance_score": 0-100,
+        "potential_impact": "low|medium|high",
+        "summary": "Sentiment analysis and credibility assessment",
+        "suggested_actions": ["action1", "action2"],
+        "related_symbols": ["BTCUSD"]
+      }
+    required_context:
+      - platform
+      - content
+      - trading_symbols
+    conditional_sections: {}
+  
+  # Academic Paper Analysis Template
+  - data_type: academic_paper
+    template_name: academic_paper_analysis
+    system_prompt: |
+      You are a quantitative finance researcher. Analyze academic papers for practical trading insights.
+      Focus on actionable findings and methodologies.
+    user_prompt_template: |
+      Academic Paper:
+      Title: {{title}}
+      Authors: {{authors}}
+      Published: {{published_date}}
+      Abstract: {{abstract}}
+      
+      User Context:
+      - Trading Symbols: {{trading_symbols}}
+      - Active EAs: {{active_eas}}
+      
+      Provide analysis in JSON format:
+      {
+        "relevance_score": 0-100,
+        "potential_impact": "low|medium|high",
+        "summary": "Key findings and practical applications",
+        "suggested_actions": ["action1", "action2"],
+        "related_symbols": []
+      }
+    required_context:
+      - title
+      - abstract
+      - trading_symbols
+    conditional_sections: {}
+
+# Context variable definitions
+context_variables:
+  - name: user_name
+    source: database
+    required: false
+  
+  - name: trading_symbols
+    source: database
+    required: true
+  
+  - name: risk_tolerance
+    source: database
+    required: false
+  
+  - name: recent_trades
+    source: database
+    required: false
+  
+  - name: market_conditions
+    source: runtime
+    required: false
+  
+  - name: active_eas
+    source: database
+    required: false
+  
+  - name: data_content
+    source: runtime
+    required: true
+
+# Template rendering settings
+rendering:
+  strict_mode: false  # If true, missing optional variables cause error
+  escape_html: false
+  trim_blocks: true
+  lstrip_blocks: true

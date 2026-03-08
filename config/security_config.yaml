@@ -1,0 +1,181 @@
+# Security Configuration
+# Requirements: 42.1-42.10
+
+# Input validation settings
+input_validation:
+  max_string_length: 10000
+  max_request_size_bytes: 10485760  # 10 MB
+  enable_sql_injection_detection: true
+  enable_command_injection_detection: true
+  enable_xss_detection: true
+
+# TLS/HTTPS settings
+tls:
+  enabled: true
+  min_version: "TLSv1.2"
+  cert_file: "/path/to/cert.pem"
+  key_file: "/path/to/key.pem"
+  # For development, you can use self-signed certificates
+  # For production, use certificates from a trusted CA
+
+# Encryption settings
+encryption:
+  algorithm: "AES-256"
+  # Encryption key should be set via ENCRYPTION_KEY environment variable
+  # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+  key_rotation_days: 90
+  
+  # Fields to encrypt at rest
+  encrypted_fields:
+    - api_keys
+    - broker_credentials
+    - user_passwords
+    - oauth_tokens
+    - webhook_secrets
+
+# Secret management
+secrets:
+  provider: "environment"  # Options: environment, vault
+  # For HashiCorp Vault integration:
+  # vault_url: "http://localhost:8200"
+  # vault_token: "${VAULT_TOKEN}"
+  # vault_path: "secret/openfi"
+
+# Security headers
+security_headers:
+  content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  x_frame_options: "DENY"
+  x_content_type_options: "nosniff"
+  strict_transport_security: "max-age=31536000; includeSubDomains; preload"
+  x_xss_protection: "1; mode=block"
+  referrer_policy: "strict-origin-when-cross-origin"
+  permissions_policy: "geolocation=(), microphone=(), camera=(), payment=()"
+
+# CORS settings
+cors:
+  enabled: true
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8080"
+    - "http://127.0.0.1:3000"
+    - "http://127.0.0.1:8080"
+    # Add production origins here
+  allow_credentials: true
+  allow_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  max_age: 600  # Cache preflight requests for 10 minutes
+
+# Security scanning
+security_scanning:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  
+  dependency_scan:
+    enabled: true
+    tool: "safety"
+    fail_on_vulnerability: true
+  
+  static_analysis:
+    enabled: true
+    tool: "bandit"
+    severity_threshold: "medium"
+    fail_on_issue: false
+  
+  container_scan:
+    enabled: true
+    tool: "trivy"
+    severity_threshold: "high"
+    fail_on_vulnerability: false
+
+# Database security
+database:
+  # Use separate users for different access levels
+  users:
+    readonly:
+      username: "openfi_readonly"
+      # Password should be set via environment variable
+      permissions:
+        - "SELECT"
+    
+    application:
+      username: "openfi_app"
+      # Password should be set via environment variable
+      permissions:
+        - "SELECT"
+        - "INSERT"
+        - "UPDATE"
+        - "DELETE"
+    
+    admin:
+      username: "openfi_admin"
+      # Password should be set via environment variable
+      permissions:
+        - "ALL"
+  
+  # Connection settings
+  ssl_mode: "require"
+  ssl_cert: "/path/to/client-cert.pem"
+  ssl_key: "/path/to/client-key.pem"
+  ssl_root_cert: "/path/to/ca-cert.pem"
+
+# File system permissions
+filesystem:
+  config_dir_permissions: "0750"  # rwxr-x---
+  log_dir_permissions: "0750"
+  ea_dir_permissions: "0750"
+  config_file_permissions: "0640"  # rw-r-----
+  log_file_permissions: "0640"
+  ea_file_permissions: "0640"
+
+# Security event logging
+security_logging:
+  enabled: true
+  log_level: "INFO"
+  
+  # Events to log
+  log_events:
+    - "login_success"
+    - "login_failed"
+    - "access_denied"
+    - "permission_denied"
+    - "rate_limit_exceeded"
+    - "sql_injection_attempt"
+    - "command_injection_attempt"
+    - "xss_attempt"
+    - "sensitive_data_access"
+    - "config_changed"
+  
+  # Alert thresholds
+  alerts:
+    failed_login_threshold: 5
+    failed_login_window_minutes: 15
+    injection_attempt_threshold: 3
+    injection_attempt_window_minutes: 5
+
+# Rate limiting
+rate_limiting:
+  enabled: true
+  requests_per_minute: 100
+  burst_size: 20
+  
+  # Per-endpoint overrides
+  endpoint_limits:
+    "/api/auth/login":
+      requests_per_minute: 5
+      burst_size: 2
+    "/api/auth/refresh":
+      requests_per_minute: 10
+      burst_size: 3
+
+# Session management
+session:
+  timeout_minutes: 1440  # 24 hours
+  refresh_token_days: 30
+  max_concurrent_sessions: 5
+  secure_cookie: true
+  httponly_cookie: true
+  samesite: "strict"

@@ -1,0 +1,730 @@
+# Push Service Configuration
+# 推送服务配置文件
+# 
+# 重要说明：
+# - 内部系统时间：所有内部处理、API 调用、数据库存储都使用 UTC 时区
+# - 用户展示时间：所有推送给用户的时间都会自动转换为用户设定的时区
+# - 定时任务：用户设定的时间（如日报时间）会自动转换为 UTC 执行
+# 
+# 支持多种推送渠道和灵活的推送策略
+
+# ============================================
+# 用户时区配置
+# ============================================
+user_timezone:
+  # 用户时区（IANA 时区数据库格式）
+  # 常用时区：
+  # - "UTC" - 协调世界时
+  # - "Asia/Shanghai" - 北京时间 (UTC+8)
+  # - "Asia/Hong_Kong" - 香港时间 (UTC+8)
+  # - "Asia/Tokyo" - 东京时间 (UTC+9)
+  # - "America/New_York" - 纽约时间 (UTC-5/-4)
+  # - "Europe/London" - 伦敦时间 (UTC+0/+1)
+  # - "Australia/Sydney" - 悉尼时间 (UTC+10/+11)
+  timezone: "Asia/Shanghai"  # 默认使用北京时间
+  
+  # 时间格式（用于展示给用户）
+  datetime_format: "%Y-%m-%d %H:%M:%S"  # 2024-01-01 16:00:00
+  date_format: "%Y-%m-%d"  # 2024-01-01
+  time_format: "%H:%M:%S"  # 16:00:00
+  
+  # 是否在时间后显示时区名称
+  show_timezone_name: true  # 显示为 "2024-01-01 16:00:00 CST"
+  
+  # 是否使用 12 小时制
+  use_12_hour_format: false  # false=24小时制, true=12小时制
+
+# ============================================
+# 推送渠道配置
+# ============================================
+channels:
+  # Telegram
+  telegram:
+    enabled: true
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+    chat_id: "${TELEGRAM_CHAT_ID}"
+    parse_mode: "Markdown"  # Markdown, HTML, None
+    disable_notification: false
+    timeout: 10
+    
+  # Discord
+  discord:
+    enabled: true
+    webhook_url: "${DISCORD_WEBHOOK_URL}"
+    username: "openfi Bot"
+    avatar_url: ""
+    timeout: 10
+    
+  # 飞书 (Feishu/Lark)
+  feishu:
+    enabled: false
+    webhook_url: "${FEISHU_WEBHOOK_URL}"
+    secret: "${FEISHU_SECRET}"  # 签名校验密钥
+    msg_type: "interactive"  # text, post, interactive
+    timeout: 10
+    
+  # 企业微信 (WeChat Work)
+  wechat_work:
+    enabled: false
+    webhook_url: "${WECHAT_WORK_WEBHOOK_URL}"
+    msgtype: "markdown"  # text, markdown, news
+    timeout: 10
+    
+  # Email
+  email:
+    enabled: true
+    smtp_host: "${SMTP_HOST}"
+    smtp_port: 587
+    smtp_user: "${SMTP_USER}"
+    smtp_password: "${SMTP_PASSWORD}"
+    from_address: "${EMAIL_FROM}"
+    to_addresses:
+      - "${EMAIL_TO}"
+    use_tls: true
+    timeout: 30
+
+# ============================================
+# 推送策略配置（按优先级）
+# ============================================
+push_strategies:
+  # 紧急消息（critical）
+  critical:
+    # 立即推送
+    immediate: true
+    
+    # 推送渠道（按优先级）
+    channels:
+      - telegram
+      - discord
+      - feishu
+      - wechat_work
+    
+    # 是否包含交易品种现价
+    include_current_price: true
+    
+    # 是否触发EA回测
+    trigger_ea_backtest: true
+    
+    # 是否应用因子过滤（参考 factor_filtering.by_priority.critical）
+    apply_factor_filtering: false
+    
+    # 是否触发因子回测（参考 factor_backtest.by_priority.critical）
+    trigger_factor_backtest: false
+    
+    # 消息格式
+    message_format:
+      title_prefix: "🚨 [紧急]"
+      include_timestamp: true
+      include_source: true
+      include_summary: true
+      include_full_content: true
+      include_ai_analysis: true
+      include_trading_suggestions: true
+      include_factor_info: false  # 是否包含因子信息
+      include_factor_backtest_results: false  # 是否包含因子回测结果
+    
+    # 重试策略
+    retry:
+      enabled: true
+      max_attempts: 3
+      backoff_seconds: 5
+  
+  # 重要消息（high）
+  high:
+    # 立即推送
+    immediate: true
+    
+    # 推送渠道
+    channels:
+      - telegram
+      - discord
+    
+    # 是否包含交易品种现价
+    include_current_price: true
+    
+    # 是否触发EA回测
+    trigger_ea_backtest: false
+    
+    # 是否应用因子过滤（参考 factor_filtering.by_priority.high）
+    apply_factor_filtering: false
+    
+    # 是否触发因子回测（参考 factor_backtest.by_priority.high）
+    trigger_factor_backtest: false
+    
+    # 消息格式
+    message_format:
+      title_prefix: "⚠️ [重要]"
+      include_timestamp: true
+      include_source: true
+      include_summary: true
+      include_full_content: false
+      include_ai_analysis: true
+      include_trading_suggestions: false
+      include_factor_info: false
+      include_factor_backtest_results: false
+    
+    # 重试策略
+    retry:
+      enabled: true
+      max_attempts: 2
+      backoff_seconds: 10
+  
+  # 一般消息（medium）
+  medium:
+    # 定时推送（不立即推送）
+    immediate: false
+    
+    # 推送渠道
+    channels:
+      - telegram
+    
+    # 是否包含交易品种现价
+    include_current_price: false
+    
+    # 是否触发EA回测
+    trigger_ea_backtest: false
+    
+    # 是否应用因子过滤（参考 factor_filtering.by_priority.medium）
+    apply_factor_filtering: false
+    
+    # 是否触发因子回测（参考 factor_backtest.by_priority.medium）
+    trigger_factor_backtest: false
+    
+    # 消息格式
+    message_format:
+      title_prefix: "ℹ️ [一般]"
+      include_timestamp: true
+      include_source: false
+      include_summary: true
+      include_full_content: false
+      include_ai_analysis: false
+      include_trading_suggestions: false
+      include_factor_info: false
+      include_factor_backtest_results: false
+    
+    # 重试策略
+    retry:
+      enabled: false
+      max_attempts: 1
+      backoff_seconds: 0
+
+# ============================================
+# 经济数据推送配置
+# ============================================
+economic_data_push:
+  # 是否启用
+  enabled: true
+  
+  # 重要数据发布前推送（分钟）
+  before_release_minutes: 15
+  
+  # 重要数据发布后推送（分钟）
+  after_release_minutes: 5
+  
+  # 推送内容
+  content:
+    include_forecast: true
+    include_previous: true
+    include_actual: true
+    include_market_impact: true
+    include_related_instruments: true
+    include_current_prices: true
+  
+  # 重要数据列表（只推送这些数据）
+  important_indicators:
+    - "Non-Farm Payroll"
+    - "Interest Rate Decision"
+    - "CPI"
+    - "GDP"
+    - "Unemployment Rate"
+    - "Retail Sales"
+
+# ============================================
+# 定时报告配置
+# ============================================
+scheduled_reports:
+  # 每日报告
+  daily_report:
+    enabled: true
+    schedule:
+      type: "every_n_hours"
+      value: 24
+      time_utc: "08:00"  # UTC时间 08:00 (北京时间 16:00)
+      # 注意：如果设置了 user_time，系统会自动转换为 UTC
+      # 例如：user_time: "16:00" + timezone: "Asia/Shanghai" = time_utc: "08:00"
+      user_time: "16:00"  # 用户时区的时间（可选，优先级高于 time_utc）
+      use_user_timezone: true  # 是否使用用户时区解析 user_time
+    
+    channels:
+      - telegram
+      - email
+    
+    content:
+      include_market_summary: true
+      include_top_news: true
+      include_ai_insights: true
+      include_trading_opportunities: true
+      include_performance_stats: true
+      max_news_items: 10
+    
+    format: "markdown"
+  
+  # 每周报告
+  weekly_report:
+    enabled: true
+    schedule:
+      type: "every_n_weeks"
+      value: 1
+      day_of_week: "monday"  # monday, tuesday, etc.
+      time_utc: "00:00"
+      user_time: "08:00"  # 用户时区的时间（北京时间周一早上8点）
+      use_user_timezone: true
+    
+    channels:
+      - email
+    
+    content:
+      include_market_summary: true
+      include_top_news: true
+      include_ai_insights: true
+      include_trading_opportunities: true
+      include_performance_stats: true
+      include_charts: true
+      max_news_items: 50
+    
+    format: "html"
+  
+  # 自定义间隔报告
+  custom_interval_report:
+    enabled: false
+    schedule:
+      type: "every_n_minutes"  # every_n_minutes, every_n_hours, every_n_days
+      value: 60  # 每60分钟
+    
+    channels:
+      - telegram
+    
+    content:
+      include_market_summary: true
+      include_top_news: true
+      max_news_items: 5
+
+# ============================================
+# EA回测配置（用于推送前评估交易机会）
+# ============================================
+ea_backtest:
+  # 是否启用
+  enabled: true
+  
+  # 回测时间长度（小时）
+  backtest_hours: 24
+  
+  # 模拟仓位大小（手数）
+  simulation_lot_size: 0.01
+  
+  # 最大回测EA数量
+  max_ea_count: 5
+  
+  # 回测超时（秒）
+  timeout_seconds: 30
+  
+  # 返回结果格式
+  result_format:
+    include_entry_price: true
+    include_stop_loss: true
+    include_take_profit: true
+    include_risk_reward_ratio: true
+    include_win_probability: true
+    include_expected_profit: true
+    include_reasoning: true
+  
+  # 最小置信度阈值（低于此值不推送）
+  min_confidence_threshold: 0.7
+
+# ============================================
+# 因子过滤配置（用于推送前筛选交易信号）
+# ============================================
+factor_filtering:
+  # 是否启用因子过滤
+  enabled: false
+  
+  # 按优先级配置因子过滤规则
+  by_priority:
+    # 紧急消息的因子过滤
+    critical:
+      enabled: true
+      
+      # 因子组合逻辑（AND: 所有因子都满足, OR: 任一因子满足）
+      combination_logic: "AND"
+      
+      # 因子条件列表
+      factors:
+        - factor_id: "momentum_20d"
+          threshold: 0.05  # 因子值阈值
+          operator: ">"  # 比较运算符: >, <, >=, <=, ==, !=
+          weight: 1.0  # 因子权重（用于加权组合）
+        
+        - factor_id: "value_factor"
+          threshold: 0.3
+          operator: ">"
+          weight: 0.8
+      
+      # 最小因子得分（加权组合后的综合得分）
+      min_composite_score: 0.7
+      
+      # 是否使用因子排名而非绝对值
+      use_ranking: false
+      
+      # 因子排名阈值（如果use_ranking=true）
+      # 例如：top_n_percent=10 表示只推送因子排名前10%的信号
+      top_n_percent: 10
+    
+    # 重要消息的因子过滤
+    high:
+      enabled: true
+      combination_logic: "OR"
+      factors:
+        - factor_id: "momentum_20d"
+          threshold: 0.03
+          operator: ">"
+          weight: 1.0
+      min_composite_score: 0.5
+      use_ranking: false
+    
+    # 一般消息的因子过滤
+    medium:
+      enabled: false
+      combination_logic: "OR"
+      factors: []
+      min_composite_score: 0.3
+      use_ranking: false
+  
+  # 全局因子过滤设置
+  global_settings:
+    # 因子数据缓存时间（秒）
+    cache_ttl_seconds: 300
+    
+    # 因子计算超时（秒）
+    calculation_timeout_seconds: 10
+    
+    # 因子数据不可用时的处理方式
+    # - "skip_filter": 跳过因子过滤，继续推送
+    # - "block_push": 阻止推送
+    # - "use_cached": 使用缓存的因子数据
+    on_factor_unavailable: "skip_filter"
+    
+    # 是否在推送消息中包含因子信息
+    include_factor_info_in_message: true
+    
+    # 因子信息格式
+    factor_info_format:
+      show_factor_names: true
+      show_factor_values: true
+      show_factor_scores: true
+      show_filter_reason: true  # 显示过滤原因（如果被过滤）
+  
+  # 因子黑名单（这些交易品种不应用因子过滤）
+  symbol_blacklist:
+    - "XAUUSD"  # 黄金
+    # - "BTCUSD"  # 比特币
+  
+  # 因子白名单（只对这些交易品种应用因子过滤，为空则对所有品种应用）
+  symbol_whitelist: []
+
+# ============================================
+# 因子回测配置（用于推送前验证因子有效性）
+# ============================================
+factor_backtest:
+  # 是否启用推送前因子回测
+  enabled: false
+  
+  # 按优先级配置因子回测规则
+  by_priority:
+    # 紧急消息的因子回测
+    critical:
+      enabled: true
+      
+      # 回测参数
+      backtest_params:
+        # 回测时间范围
+        lookback_days: 30  # 回看天数
+        
+        # 回测交易品种（为空则使用推送信号中的品种）
+        symbols: []
+        
+        # 初始资金
+        initial_capital: 10000
+        
+        # 手续费率
+        commission_rate: 0.0001
+        
+        # 滑点（点数）
+        slippage_points: 2
+        
+        # 杠杆
+        leverage: 1.0
+      
+      # 因子回测阈值（低于阈值则不推送）
+      performance_thresholds:
+        # 最小夏普比率
+        min_sharpe_ratio: 1.0
+        
+        # 最小年化收益率
+        min_annual_return: 0.1  # 10%
+        
+        # 最大回撤
+        max_drawdown: -0.2  # -20%
+        
+        # 最小胜率
+        min_win_rate: 0.5  # 50%
+        
+        # 最小盈亏比
+        min_profit_loss_ratio: 1.5
+        
+        # 最小交易次数（少于此值则认为样本不足）
+        min_trade_count: 10
+      
+      # 因子组合回测（测试多因子组合策略）
+      combination_backtest:
+        enabled: false
+        
+        # 因子权重优化方法
+        # - "equal": 等权
+        # - "ic_weighted": IC加权
+        # - "max_sharpe": 最大化夏普比率
+        optimization_method: "max_sharpe"
+        
+        # 因子列表
+        factor_ids:
+          - "momentum_20d"
+          - "value_factor"
+          - "mean_reversion"
+        
+        # 权重约束
+        weight_constraints:
+          min_weight: 0.0
+          max_weight: 0.5
+      
+      # 回测超时（秒）
+      timeout_seconds: 60
+      
+      # 是否在推送消息中包含回测结果
+      include_backtest_results: true
+    
+    # 重要消息的因子回测
+    high:
+      enabled: false
+      backtest_params:
+        lookback_days: 20
+        symbols: []
+        initial_capital: 10000
+        commission_rate: 0.0001
+        slippage_points: 2
+        leverage: 1.0
+      performance_thresholds:
+        min_sharpe_ratio: 0.8
+        min_annual_return: 0.05
+        max_drawdown: -0.3
+        min_win_rate: 0.45
+        min_profit_loss_ratio: 1.2
+        min_trade_count: 5
+      combination_backtest:
+        enabled: false
+      timeout_seconds: 45
+      include_backtest_results: true
+    
+    # 一般消息的因子回测
+    medium:
+      enabled: false
+      backtest_params:
+        lookback_days: 10
+        symbols: []
+        initial_capital: 10000
+        commission_rate: 0.0001
+        slippage_points: 2
+        leverage: 1.0
+      performance_thresholds:
+        min_sharpe_ratio: 0.5
+        min_annual_return: 0.0
+        max_drawdown: -0.4
+        min_win_rate: 0.4
+        min_profit_loss_ratio: 1.0
+        min_trade_count: 3
+      combination_backtest:
+        enabled: false
+      timeout_seconds: 30
+      include_backtest_results: false
+  
+  # 全局因子回测设置
+  global_settings:
+    # 回测引擎类型
+    # - "vectorized": 向量化回测（快速）
+    # - "event_driven": 事件驱动回测（精确）
+    engine_type: "vectorized"
+    
+    # 回测数据源
+    data_source: "market_data_api"  # 使用现有的市场数据API
+    
+    # 回测结果缓存时间（秒）
+    cache_ttl_seconds: 3600
+    
+    # 回测失败时的处理方式
+    # - "skip_backtest": 跳过回测，继续推送
+    # - "block_push": 阻止推送
+    # - "use_cached": 使用缓存的回测结果
+    on_backtest_failure: "skip_backtest"
+    
+    # 是否保存回测结果到数据库
+    save_results_to_db: true
+    
+    # 回测结果格式
+    result_format:
+      include_equity_curve: true
+      include_trade_details: true
+      include_performance_metrics: true
+      include_factor_analysis: true
+  
+  # 回测结果展示格式（在推送消息中）
+  message_format:
+    template: |
+      
+      📊 **因子回测结果**
+      
+      ⏱️ 回测周期: {lookback_days}天
+      💰 初始资金: ${initial_capital}
+      
+      **绩效指标:**
+      • 年化收益率: {annual_return:.2%}
+      • 夏普比率: {sharpe_ratio:.2f}
+      • 最大回撤: {max_drawdown:.2%}
+      • 胜率: {win_rate:.2%}
+      • 盈亏比: {profit_loss_ratio:.2f}
+      • 交易次数: {trade_count}
+      
+      {factor_analysis}
+    
+    # 是否包含净值曲线图（需要图表生成支持）
+    include_equity_chart: false
+
+# ============================================
+# 消息模板配置
+# ============================================
+message_templates:
+  # 快讯模板
+  breaking_news:
+    telegram: |
+      {title_prefix} **{title}**
+      
+      📅 时间: {timestamp}
+      📰 来源: {source}
+      
+      **摘要:**
+      {summary}
+      
+      {ai_analysis}
+      
+      {trading_suggestions}
+      
+      {current_prices}
+    
+    discord: |
+      {title_prefix} **{title}**
+      
+      :calendar: 时间: {timestamp}
+      :newspaper: 来源: {source}
+      
+      **摘要:**
+      {summary}
+      
+      {ai_analysis}
+  
+  # 经济数据模板
+  economic_data:
+    telegram: |
+      📊 **{indicator_name}**
+      
+      📅 发布时间: {release_time}
+      
+      **数据:**
+      • 预期: {forecast}
+      • 前值: {previous}
+      • 实际: {actual}
+      
+      **市场影响:** {market_impact}
+      
+      **相关品种:**
+      {related_instruments}
+      
+      **当前价格:**
+      {current_prices}
+  
+  # 日报模板
+  daily_report:
+    email_html: |
+      <html>
+      <head><title>openfi 每日报告</title></head>
+      <body>
+        <h1>📈 openfi 每日市场报告</h1>
+        <p>日期: {date}</p>
+        
+        <h2>市场概况</h2>
+        {market_summary}
+        
+        <h2>重要新闻</h2>
+        {top_news}
+        
+        <h2>AI洞察</h2>
+        {ai_insights}
+        
+        <h2>交易机会</h2>
+        {trading_opportunities}
+        
+        <h2>绩效统计</h2>
+        {performance_stats}
+      </body>
+      </html>
+
+# ============================================
+# 推送限制和控制
+# ============================================
+push_limits:
+  # 每小时最大推送数量（防止刷屏）
+  max_pushes_per_hour: 50
+  
+  # 每天最大推送数量
+  max_pushes_per_day: 500
+  
+  # 静默时段（UTC时间，不推送一般消息）
+  quiet_hours:
+    enabled: false
+    start_time_utc: "22:00"
+    end_time_utc: "06:00"
+    # 静默时段仍推送的优先级
+    allowed_priorities:
+      - critical
+  
+  # 消息去重（相同内容不重复推送）
+  deduplication:
+    enabled: true
+    time_window_minutes: 60
+    similarity_threshold: 0.9
+
+# ============================================
+# 推送监控和日志
+# ============================================
+monitoring:
+  # 记录所有推送
+  log_all_pushes: true
+  
+  # 推送失败告警
+  alert_on_failure: true
+  
+  # 推送成功率监控
+  track_success_rate: true
+  
+  # 推送延迟监控
+  track_latency: true
+  
+  # 统计报告
+  generate_stats_report: true
+  stats_report_interval_hours: 24

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenFi API 文档</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+        }
+        
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .endpoint {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        
+        .get { background: #61affe; color: white; }
+        .post { background: #49cc90; color: white; }
+        .put { background: #fca130; color: white; }
+        .delete { background: #f93e3e; color: white; }
+        
+        .path {
+            font-family: 'Courier New', monospace;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .description {
+            color: #666;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .auth-required {
+            display: inline-block;
+            background: #ffeaa7;
+            color: #d63031;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        
+        .try-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .try-button:hover {
+            background: #5568d3;
+        }
+        
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 OpenFi API 文档</h1>
+            <p class="subtitle">完整的 REST API 参考文档</p>
+        </header>
+        
+        <div class="alert alert-info">
+            <strong>💡 提示：</strong> 如果 Swagger UI 无法加载，可以使用此简化版文档。
+            大部分端点需要 JWT 认证，请先调用登录接口获取 Token。
+        </div>
+        
+        <!-- 认证相关 -->
+        <div class="section">
+            <h2>🔐 认证 (Authentication)</h2>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="path">/api/v1/auth/login</span>
+                <p class="description">
+                    用户登录，获取 JWT Token<br>
+                    <strong>请求体：</strong> <code>{"username": "admin", "password": "your-password"}</code><br>
+                    <strong>响应：</strong> <code>{"access_token": "...", "token_type": "bearer"}</code>
+                </p>
+                <button class="try-button" onclick="testEndpoint('POST', '/api/v1/auth/login', {username: 'admin', password: 'password'})">测试此接口</button>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="path">/api/v1/auth/logout</span>
+                <span class="auth-required">需要认证</span>
+                <p class="description">用户登出</p>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="path">/api/v1/auth/register</span>
+                <p class="description">
+                    注册新用户<br>
+                    <strong>请求体：</strong> <code>{"username": "...", "email": "...", "password": "..."}</code>
+                </p>
+            </div>
+        </div>
+        
+        <!-- 配置管理 -->
+        <div class="section">
+            <h2>⚙️ 配置管理 (Configuration)</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="path">/api/v1/config/{file_name}</span>
+                <span class="auth-required">需要认证</span>
+                <p class="description">
+                    获取配置文件内容<br>
+                    <strong>可用文件：</strong> llm_config.yaml, fetch_sources.yaml, push_config.yaml 等
+                </p>
+                <button class="try-button" onclick="testEndpoint('GET', '/api/v1/config/llm_config.yaml')">测试此接口</button>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method put">PUT</span>
+                <span class="path">/api/v1/config/{file_name}</span>
+                <span class="auth-required">需要认证</span>
+                <p class="description">
+                    更新配置文件<br>
+                    <strong>请求体：</strong> <code>{"content": "YAML格式的配置内容"}</code>
+                </p>
+            </div>
+        </div>
+        
+        <!-- 用户管理 -->
+        <div class="section">
+            <h2>👥 用户管理 (Users)</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="path">/api/v1/users/me</span>
+                <span class="auth-required">需要认证</span>
+                <p class="description">获取当前用户信息</p>
+                <button class="try-button" onclick="testEndpoint('GET', '/api/v1/users/me')">测试此接口</button>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="path">/api/v1/users</span>
+                <span class="auth-required">需要认证</span>
+                <p class="description">获取所有用户列表（需要管理员权限）</p>
+            </div>
+        </div>
+        
+        <!-- 交易管理 -->
+        <div class="section">
+            <h2>💰 交易管理 (Trades)</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="path">/api/v1/trades</span>
+                <span class="auth-required">需要认证</span>
+                <p class="description">
+                    获取交易列表<br>
+                    <strong>查询参数：</strong> limit, offset, status
+                </p>
+                <button class="try-button" onclick="testEndpoint('GET', '/api/v1/trades?limit=10')">测试此接口</button>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="path">/api/v1/trades/{trade_id}</span>
+                <span class="auth-required">需要认证</span>
+                <p class="description">获取单个交易详情</p>
+            </div>
+        </div>
+        
+        <!-- 仪表板 -->
+        <div class="section">
+            <h2>📊 仪表板 (Dashboard)</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="path">/api/v1/dashboard/metrics</span>
+                <span class="auth-required">需要认证</span>
+                <p class="description">获取系统指标数据</p>
+                <button class="try-button" onclick="testEndpoint('GET', '/api/v1/dashboard/metrics')">测试此接口</button>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="path">/api/v1/dashboard/system-status</span>
+                <span class="auth-required">需要认证</span>
+                <p class="description">获取系统状态</p>
+            </div>
+        </div>
+        
+        <!-- 系统端点 -->
+        <div class="section">
+            <h2>🔧 系统端点 (System)</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="path">/health</span>
+                <p class="description">健康检查端点（无需认证）</p>
+                <button class="try-button" onclick="testEndpoint('GET', '/health')">测试此接口</button>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="path">/openapi.json</span>
+                <p class="description">获取 OpenAPI 规范（无需认证）</p>
+                <button class="try-button" onclick="window.open('/openapi.json', '_blank')">查看 OpenAPI 规范</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📖 使用说明</h2>
+            <ol style="line-height: 2;">
+                <li>首先调用 <code>POST /api/v1/auth/login</code> 获取 Token</li>
+                <li>在后续请求的 Header 中添加: <code>Authorization: Bearer YOUR_TOKEN</code></li>
+                <li>使用上面的"测试此接口"按钮可以快速测试端点</li>
+                <li>完整的 API 规范请访问: <a href="/openapi.json" target="_blank">/openapi.json</a></li>
+            </ol>
+        </div>
+    </div>
+    
+    <div id="result" style="position: fixed; bottom: 20px; right: 20px; max-width: 400px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); display: none;">
+        <h3 style="margin-bottom: 10px;">测试结果</h3>
+        <pre id="resultContent" style="background: #f4f4f4; padding: 10px; border-radius: 5px; overflow: auto; max-height: 300px; font-size: 12px;"></pre>
+        <button onclick="document.getElementById('result').style.display='none'" style="margin-top: 10px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">关闭</button>
+    </div>
+    
+    <script>
+        async function testEndpoint(method, path, body = null) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(path, options);
+                const data = await response.json();
+                
+                resultContent.textContent = JSON.stringify(data, null, 2);
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                resultContent.textContent = `错误: ${error.message}`;
+                resultDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

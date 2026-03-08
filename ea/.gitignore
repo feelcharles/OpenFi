@@ -1,0 +1,13 @@
+# 忽略所有EA文件（用户上传的）
+*.ex4
+*.ex5
+*.mq4
+*.mq5
+*.pine
+
+# 忽略所有日志文件
+logs/*.txt
+
+# 保留README文件
+!README.md
+!.gitignore

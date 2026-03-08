@@ -1,0 +1,38 @@
+{
+  "name": "示例 Agent - 快讯播报",
+  "description": "自动获取和播报重要财经快讯",
+  "enabled": true,
+  "focus_areas": [
+    "news",
+    "calendar",
+    "sentiment"
+  ],
+  "schedule": {
+    "daily_report": "08:00",
+    "weekly_report": "Monday 09:00"
+  },
+  "notification_channels": [
+    {
+      "type": "telegram",
+      "config": {
+        "bot_token": "YOUR_BOT_TOKEN",
+        "chat_id": "YOUR_CHAT_ID"
+      }
+    }
+  ],
+  "llm_config": {
+    "mode": "auto",
+    "primary": "gpt-4",
+    "fallback": "gpt-3.5-turbo"
+  },
+  "permissions": {
+    "read_market_data": true,
+    "execute_trades": false,
+    "modify_config": false
+  },
+  "filters": {
+    "keywords": ["美联储", "利率", "GDP", "CPI"],
+    "min_importance": 7,
+    "languages": ["zh", "en"]
+  }
+}

@@ -1,0 +1,135 @@
+# Audit Logging Configuration
+# Validates: Requirements 39.1, 39.2, 39.4, 39.5, 39.8
+
+# Secret key for HMAC-SHA256 signatures (CHANGE THIS IN PRODUCTION!)
+# Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+secret_key: "CHANGE_THIS_SECRET_KEY_IN_PRODUCTION_USE_STRONG_RANDOM_VALUE"
+
+# Audit log file settings
+audit_log:
+  # Path to audit log file (append-only mode)
+  path: "logs/audit.log"
+  
+  # Maximum size of each log file in bytes (100MB)
+  max_bytes: 104857600
+  
+  # Number of backup files to keep (365 = 1 year of daily logs)
+  # Validates: Requirement 39.5 (365 days retention)
+  backup_count: 365
+  
+  # Log rotation strategy
+  # Options: size (rotate when file reaches max_bytes), time (rotate daily)
+  rotation_strategy: "size"
+
+# SIEM integration settings
+# Validates: Requirement 39.8
+siem:
+  # Enable SIEM integration via syslog
+  enabled: false
+  
+  # Syslog server address
+  # For local syslog: ["localhost", 514]
+  # For remote syslog: ["siem.example.com", 514]
+  address: ["localhost", 514]
+  
+  # Syslog protocol
+  # Options: UDP, TCP
+  protocol: "UDP"
+  
+  # Syslog facility
+  # Options: LOCAL0-LOCAL7, USER, DAEMON, etc.
+  facility: "LOCAL0"
+  
+  # Send audit events in real-time
+  realtime: true
+
+# Audit events to log
+# Validates: Requirement 39.2
+events:
+  # User authentication events
+  user_authentication:
+    enabled: true
+    actions:
+      - "user_login_success"
+      - "user_login_failed"
+      - "user_logout"
+      - "user_password_changed"
+      - "user_created"
+      - "user_deleted"
+  
+  # Configuration changes
+  config_changes:
+    enabled: true
+    actions:
+      - "config_change"
+      - "config_reload"
+  
+  # Trade execution events
+  trade_execution:
+    enabled: true
+    actions:
+      - "trade_executed"
+      - "trade_cancelled"
+      - "trade_modified"
+      - "order_submitted"
+      - "order_failed"
+  
+  # EA profile modifications
+  ea_profile_modifications:
+    enabled: true
+    actions:
+      - "ea_profile_created"
+      - "ea_profile_modified"
+      - "ea_profile_deleted"
+      - "ea_profile_activated"
+      - "ea_profile_deactivated"
+  
+  # Manual overrides
+  manual_overrides:
+    enabled: true
+    actions:
+      - "manual_override_circuit_breaker"
+      - "manual_override_risk_limit"
+      - "manual_override_position_size"
+      - "manual_trade_execution"
+      - "manual_trade_cancellation"
+
+# Audit log retention policy
+# Validates: Requirement 39.5
+retention:
+  # Minimum retention period in days (365 days = 1 year)
+  min_days: 365
+  
+  # Archive old logs instead of deleting
+  archive_enabled: true
+  
+  # Archive directory
+  archive_path: "logs/archive/audit"
+  
+  # Compress archived logs
+  compress: true
+  
+  # Archive format (zip, tar.gz)
+  archive_format: "tar.gz"
+
+# Audit log query settings
+query:
+  # Maximum number of results per query
+  max_results: 10000
+  
+  # Default page size
+  default_page_size: 100
+  
+  # Enable signature verification in queries
+  verify_signatures: true
+
+# Performance settings
+performance:
+  # Batch size for bulk audit log writes
+  batch_size: 100
+  
+  # Flush interval in seconds
+  flush_interval: 5
+  
+  # Enable async logging
+  async_logging: true

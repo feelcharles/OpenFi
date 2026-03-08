@@ -1,0 +1,351 @@
+# User Profiles Configuration
+# 用户配置文件管理
+# 
+# 支持最多3个 Profile，每个 Profile 包含独立的：
+# - 向量数据库
+# - Agent 状态
+# - 用户反馈
+# - 个性化设置
+
+# ============================================
+# 当前激活的 Profile
+# ============================================
+active_profile: "profile_1"
+
+# ============================================
+# Profile 列表
+# ============================================
+profiles:
+  - profile_id: "profile_1"
+    profile_name: "默认配置"
+    created_at: "2024-01-01T00:00:00Z"
+    last_used: "2024-01-15T10:30:00Z"
+    enabled: true
+    
+    # LLM 配置
+    llm:
+      primary_model: "openai/gpt-4-turbo-preview"
+      fallback_models:
+        - "anthropic/claude-3-opus"
+        - "local/llama-3-70b"
+      
+      # 模型特定设置
+      model_settings:
+        temperature: 0.7
+        max_tokens: 2000
+        top_p: 0.9
+    
+    # 向量数据库配置
+    vector_db:
+      provider: "pinecone"
+      index_name: "openfi-profile-1"
+      dimension: 1536
+      metric: "cosine"
+      
+      # 存储路径
+      storage_path: "user_data/profiles/profile_1/vector_db"
+      
+      # 清理策略
+      cleanup:
+        enabled: true
+        retention_days: 90
+    
+    # Agent 状态
+    agent_state:
+      storage_path: "user_data/profiles/profile_1/agent_state"
+      
+      # 对话历史
+      conversation_history:
+        max_messages: 1000
+        retention_days: 30
+      
+      # 学习数据
+      learning_data:
+        user_preferences: {}
+        feedback_history: []
+        optimization_metrics: {}
+    
+    # 用户偏好
+    preferences:
+      language: "zh"  # zh, en
+      timezone: "Asia/Shanghai"
+      
+      # 推送偏好
+      push_preferences:
+        enabled_channels: ["telegram", "email"]
+        quiet_hours:
+          enabled: true
+          start_time: "22:00"
+          end_time: "08:00"
+        
+        # 内容偏好
+        content_preferences:
+          news_categories: ["policy_data", "news"]
+          asset_focus: ["forex", "metals"]
+          priority_threshold: "high"
+      
+      # 交易偏好
+      trading_preferences:
+        risk_tolerance: "medium"  # low, medium, high
+        preferred_timeframes: ["1h", "4h"]
+        max_concurrent_eas: 3
+  
+  - profile_id: "profile_2"
+    profile_name: "激进策略"
+    created_at: "2024-01-10T00:00:00Z"
+    last_used: null
+    enabled: false
+    
+    llm:
+      primary_model: "anthropic/claude-3-opus"
+      fallback_models:
+        - "openai/gpt-4-turbo-preview"
+      
+      model_settings:
+        temperature: 0.8
+        max_tokens: 3000
+        top_p: 0.95
+    
+    vector_db:
+      provider: "pinecone"
+      index_name: "openfi-profile-2"
+      dimension: 1536
+      metric: "cosine"
+      storage_path: "user_data/profiles/profile_2/vector_db"
+      
+      cleanup:
+        enabled: true
+        retention_days: 60
+    
+    agent_state:
+      storage_path: "user_data/profiles/profile_2/agent_state"
+      
+      conversation_history:
+        max_messages: 500
+        retention_days: 15
+      
+      learning_data:
+        user_preferences: {}
+        feedback_history: []
+        optimization_metrics: {}
+    
+    preferences:
+      language: "en"
+      timezone: "America/New_York"
+      
+      push_preferences:
+        enabled_channels: ["telegram", "discord"]
+        quiet_hours:
+          enabled: false
+        
+        content_preferences:
+          news_categories: ["opportunity_monitoring", "news"]
+          asset_focus: ["crypto", "indices"]
+          priority_threshold: "medium"
+      
+      trading_preferences:
+        risk_tolerance: "high"
+        preferred_timeframes: ["5m", "15m", "1h"]
+        max_concurrent_eas: 5
+  
+  - profile_id: "profile_3"
+    profile_name: "保守策略"
+    created_at: null
+    last_used: null
+    enabled: false
+    
+    llm:
+      primary_model: "openai/gpt-3.5-turbo"
+      fallback_models:
+        - "local/llama-3-70b"
+      
+      model_settings:
+        temperature: 0.5
+        max_tokens: 1500
+        top_p: 0.85
+    
+    vector_db:
+      provider: "pinecone"
+      index_name: "openfi-profile-3"
+      dimension: 1536
+      metric: "cosine"
+      storage_path: "user_data/profiles/profile_3/vector_db"
+      
+      cleanup:
+        enabled: true
+        retention_days: 120
+    
+    agent_state:
+      storage_path: "user_data/profiles/profile_3/agent_state"
+      
+      conversation_history:
+        max_messages: 2000
+        retention_days: 60
+      
+      learning_data:
+        user_preferences: {}
+        feedback_history: []
+        optimization_metrics: {}
+    
+    preferences:
+      language: "zh"
+      timezone: "Asia/Hong_Kong"
+      
+      push_preferences:
+        enabled_channels: ["email", "feishu"]
+        quiet_hours:
+          enabled: true
+          start_time: "20:00"
+          end_time: "09:00"
+        
+        content_preferences:
+          news_categories: ["policy_data"]
+          asset_focus: ["forex", "indices"]
+          priority_threshold: "critical"
+      
+      trading_preferences:
+        risk_tolerance: "low"
+        preferred_timeframes: ["4h", "1D"]
+        max_concurrent_eas: 2
+
+# ============================================
+# Profile 管理设置
+# ============================================
+management:
+  # 最大 Profile 数量
+  max_profiles: 3
+  
+  # 自动创建默认 Profile
+  auto_create_default: true
+  
+  # Profile 切换
+  switch:
+    require_confirmation: true
+    backup_current: true
+  
+  # 数据迁移
+  migration:
+    enabled: true
+    backup_before_migration: true
+    backup_path: "user_data/backups"
+  
+  # 删除保护
+  deletion:
+    require_confirmation: true
+    soft_delete: true  # 软删除，保留30天
+    retention_days: 30
+
+# ============================================
+# 数据同步设置
+# ============================================
+sync:
+  # 是否启用同步
+  enabled: false
+  
+  # 同步内容
+  sync_items:
+    - "agent_state"
+    - "conversation_history"
+    - "user_preferences"
+  
+  # 同步频率
+  frequency: "daily"  # hourly, daily, weekly
+  
+  # 同步目标
+  target:
+    type: "local"  # local, cloud, custom
+    path: "user_data/sync"
+
+# ============================================
+# 备份设置
+# ============================================
+backup:
+  # 自动备份
+  auto_backup:
+    enabled: true
+    frequency: "weekly"  # daily, weekly, monthly
+    retention_count: 5  # 保留最近5个备份
+    backup_path: "user_data/backups"
+  
+  # 备份内容
+  backup_items:
+    - "vector_db"
+    - "agent_state"
+    - "conversation_history"
+    - "user_preferences"
+    - "feedback_history"
+  
+  # 压缩
+  compression:
+    enabled: true
+    format: "zip"  # zip, tar.gz
+
+# ============================================
+# 恢复设置
+# ============================================
+restore:
+  # 恢复前验证
+  validate_before_restore: true
+  
+  # 恢复后操作
+  post_restore:
+    restart_required: true
+    clear_cache: true
+
+# ============================================
+# 隐私和安全
+# ============================================
+privacy:
+  # 数据加密
+  encryption:
+    enabled: true
+    algorithm: "AES-256"
+    key_storage: "environment"  # environment, file, keyring
+  
+  # 数据匿名化
+  anonymization:
+    enabled: false
+    anonymize_conversation: false
+    anonymize_feedback: false
+  
+  # 数据导出
+  export:
+    enabled: true
+    format: "json"  # json, csv
+    include_sensitive_data: false
+
+# ============================================
+# 监控和日志
+# ============================================
+monitoring:
+  # Profile 使用统计
+  usage_stats:
+    enabled: true
+    track_items:
+      - "llm_calls"
+      - "vector_db_queries"
+      - "ea_backtests"
+      - "push_notifications"
+  
+  # 性能监控
+  performance:
+    enabled: true
+    metrics:
+      - "response_time"
+      - "memory_usage"
+      - "storage_usage"
+  
+  # 日志
+  logging:
+    enabled: true
+    log_level: "INFO"
+    log_path: "user_data/profiles/{profile_id}/logs"
+
+# ============================================
+# 备注
+# ============================================
+# 1. 每个 Profile 都是完全独立的，包含自己的向量数据库和 Agent 状态
+# 2. 切换 Profile 会重新加载所有相关数据
+# 3. 删除 Profile 文件夹不会影响程序运行，程序会自动创建默认 Profile
+# 4. Profile 数据可以整体复制迁移到其他系统
+# 5. 建议定期备份 Profile 数据

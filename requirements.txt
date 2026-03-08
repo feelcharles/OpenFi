@@ -1,0 +1,180 @@
+# ============================================================================
+# OpenFi - Python Dependencies
+# ============================================================================
+# Install: pip install -r requirements.txt
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Core Web Framework
+# ----------------------------------------------------------------------------
+fastapi>=0.104.0                # Modern web framework
+uvicorn[standard]>=0.24.0       # ASGI server
+pydantic>=2.5.0                 # Data validation
+pydantic-settings>=2.1.0        # Settings management
+python-multipart>=0.0.6         # Form data parsing
+
+# ----------------------------------------------------------------------------
+# Async Support
+# ----------------------------------------------------------------------------
+aiohttp>=3.9.0                  # Async HTTP client
+aiofiles>=23.2.0                # Async file operations
+aiodns>=3.1.0                   # Async DNS resolver
+
+# ----------------------------------------------------------------------------
+# Database
+# ----------------------------------------------------------------------------
+sqlalchemy>=2.0.0               # ORM
+asyncpg>=0.28.0                 # Async PostgreSQL driver
+aiosqlite>=0.19.0               # Async SQLite driver
+alembic>=1.12.0                 # Database migrations
+psycopg2-binary>=2.9.0          # PostgreSQL adapter
+
+# ----------------------------------------------------------------------------
+# Redis & Caching
+# ----------------------------------------------------------------------------
+redis>=5.0.0                    # Redis client
+hiredis>=2.2.0                  # Redis protocol parser (performance)
+
+# ----------------------------------------------------------------------------
+# Configuration & Environment
+# ----------------------------------------------------------------------------
+python-dotenv>=1.0.0            # .env file support
+pyyaml>=6.0                     # YAML parser
+watchdog>=3.0.0                 # File system monitoring
+
+# ----------------------------------------------------------------------------
+# Logging & Monitoring
+# ----------------------------------------------------------------------------
+structlog>=23.0.0               # Structured logging
+python-json-logger>=2.0.0       # JSON logging
+prometheus-client>=0.19.0       # Prometheus metrics
+
+# ----------------------------------------------------------------------------
+# Scheduling & Background Tasks
+# ----------------------------------------------------------------------------
+apscheduler>=3.10.0             # Job scheduling
+croniter>=2.0.0                 # Cron expression parser
+celery>=5.3.0                   # Distributed task queue
+
+# ----------------------------------------------------------------------------
+# LLM Integration
+# ----------------------------------------------------------------------------
+openai>=1.0.0                   # OpenAI API client
+anthropic>=0.8.0                # Anthropic API client
+tiktoken>=0.5.0                 # Token counting for OpenAI
+
+# ----------------------------------------------------------------------------
+# Vector Database (Optional - choose one)
+# ----------------------------------------------------------------------------
+# pinecone-client>=5.0.1        # Pinecone vector DB
+# weaviate-client>=4.9.3        # Weaviate vector DB
+# qdrant-client>=1.12.1         # Qdrant vector DB
+
+# ----------------------------------------------------------------------------
+# HTTP Clients
+# ----------------------------------------------------------------------------
+httpx>=0.25.0                   # Modern HTTP client
+requests>=2.31.0                # Traditional HTTP client
+websockets>=12.0                # WebSocket support
+
+# ----------------------------------------------------------------------------
+# Data Processing
+# ----------------------------------------------------------------------------
+pandas>=2.0.0                   # Data analysis
+numpy>=1.24.0                   # Numerical computing
+python-dateutil>=2.8.0          # Date utilities
+pytz>=2023.3                    # Timezone support
+tzdata>=2023.3                  # Timezone database
+
+# ----------------------------------------------------------------------------
+# Security & Authentication
+# ----------------------------------------------------------------------------
+cryptography>=41.0.0            # Encryption
+pyjwt>=2.8.0                    # JWT tokens
+passlib[bcrypt]>=1.7.4          # Password hashing
+python-jose[cryptography]>=3.3.0 # JWT encoding/decoding
+bcrypt==4.0.1                   # Password hashing algorithm (pinned for compatibility)
+
+# ----------------------------------------------------------------------------
+# Push Notifications
+# ----------------------------------------------------------------------------
+python-telegram-bot>=20.0       # Telegram bot
+discord.py>=2.0.0               # Discord bot
+aiosmtplib>=2.0.0               # Async SMTP for email
+
+# ----------------------------------------------------------------------------
+# Data Fetching & APIs
+# ----------------------------------------------------------------------------
+beautifulsoup4>=4.11.0          # HTML parsing
+lxml>=4.9.0                     # XML/HTML parser
+feedparser>=6.0.10              # RSS/Atom feed parser
+
+# ----------------------------------------------------------------------------
+# Testing
+# ----------------------------------------------------------------------------
+pytest>=7.4.0                   # Testing framework
+pytest-asyncio>=0.21.0          # Async test support
+pytest-cov>=4.1.0               # Coverage reporting
+pytest-mock>=3.11.0             # Mocking support
+hypothesis>=6.82.0              # Property-based testing
+faker>=19.0.0                   # Fake data generation
+
+# ----------------------------------------------------------------------------
+# Development Tools
+# ----------------------------------------------------------------------------
+black>=23.0.0                   # Code formatter
+flake8>=6.0.0                   # Linter
+mypy>=1.0.0                     # Type checker
+isort>=5.12.0                   # Import sorter
+pylint>=2.17.0                  # Code analyzer
+
+# ----------------------------------------------------------------------------
+# Security Scanning
+# ----------------------------------------------------------------------------
+safety>=2.3.0                   # Dependency vulnerability scanner
+bandit>=1.7.0                   # Security issue scanner
+
+# ----------------------------------------------------------------------------
+# Utilities
+# ----------------------------------------------------------------------------
+click>=8.1.0                    # CLI framework
+rich>=13.0.0                    # Terminal formatting
+tqdm>=4.65.0                    # Progress bars
+python-magic>=0.4.27            # File type detection
+
+# ----------------------------------------------------------------------------
+# Optional: Machine Learning (uncomment if needed)
+# ----------------------------------------------------------------------------
+# scikit-learn>=1.5.2           # Machine learning
+# tensorflow>=2.18.0            # Deep learning
+# torch>=2.5.1                  # PyTorch
+# transformers>=4.46.3          # Hugging Face transformers
+
+# ----------------------------------------------------------------------------
+# Optional: Financial Data (uncomment if needed)
+# ----------------------------------------------------------------------------
+# yfinance>=0.2.50              # Yahoo Finance
+# alpha-vantage>=2.3.1          # Alpha Vantage API
+# ccxt>=4.4.37                  # Cryptocurrency exchange APIs
+
+# ============================================================================
+# Installation Notes
+# ============================================================================
+# 
+# Basic Installation:
+#   pip install -r requirements.txt
+#
+# Development Installation (includes dev tools):
+#   pip install -r requirements.txt
+#
+# Production Installation (minimal):
+#   pip install fastapi uvicorn sqlalchemy redis pydantic python-dotenv
+#
+# Update All Packages:
+#   pip install --upgrade -r requirements.txt
+#
+# Check for Security Issues:
+#   safety check
+#   bandit -r system_core/
+#
+# ============================================================================

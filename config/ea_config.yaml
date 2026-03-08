@@ -1,0 +1,126 @@
+backtest:
+  max_concurrent_backtests: 100
+  default_backtest_period: 24h
+  timeframes:
+  - 5m
+  - 15m
+  - 1h
+  - 4h
+  - 1D
+  data_source:
+    provider: mt5
+    cache_enabled: true
+    cache_ttl: 3600
+  metrics:
+    min_win_rate: 50.0
+    min_profit_factor: 1.2
+    max_drawdown: 20.0
+    min_trades: 10
+  recommendation:
+    max_recommendations: 3
+    sort_by: profit_factor
+eas: []
+auto_selection:
+  enabled: true
+  triggers:
+  - event_type: economic_data
+    timing: before
+    minutes: 15
+    action: backtest_and_recommend
+  - event_type: economic_data
+    timing: after
+    minutes: 5
+    action: backtest_and_recommend
+  - event_type: market_open
+    timing: before
+    minutes: 30
+    action: backtest_and_recommend
+  - event_type: scheduled
+    schedule: 0 */4 * * *
+    action: backtest_and_recommend
+  selection_criteria:
+    min_win_rate: 55.0
+    min_profit_factor: 1.5
+    max_drawdown: 15.0
+    min_trades: 20
+  market_conditions:
+    volatility_threshold: 0.02
+    trend_strength_threshold: 0.5
+execution:
+  stop_loss:
+    type: percent
+    default_value: 2.0
+  take_profit:
+    type: percent
+    default_value: 5.0
+  runtime:
+    default_duration: 24h
+    max_duration: 7d
+  force_close:
+    on_stop_loss: true
+    on_take_profit: true
+    on_max_drawdown: true
+    max_drawdown_percent: 10.0
+notification_format:
+  recommendation:
+    template: '🤖 EA推荐
+
+
+      {% for ea in eas %}
+
+      🤖 {{ ea.name }}
+
+      🎯 胜率: ✅{{ ea.win_rate }}% ❌-{{ ea.loss_rate }}%
+
+      💰 盈亏比: {{ ea.profit_factor }}
+
+      📉 最大回撤: {{ ea.max_drawdown }}%
+
+      {% endfor %}
+
+
+      💡 回复 `ea_start_{name}` 启动EA
+
+      '
+    emoji_map:
+      high_win_rate: 🎯
+      low_win_rate: ⚠️
+      high_profit: 💰
+      low_profit: 📉
+      recommended: ✅
+      not_recommended: ❌
+  detailed_report:
+    template: '📊 EA详细报告
+
+
+      🤖 EA名称: {{ ea.name }}
+
+      📅 回测期间: {{ ea.backtest_start }} - {{ ea.backtest_end }}
+
+      ⏱️ 时间框架: {{ ea.timeframe }}
+
+
+      📈 性能指标:
+
+      • 胜率: {{ ea.win_rate }}%
+
+      • 盈亏比: {{ ea.profit_factor }}
+
+      • 最大回撤: {{ ea.max_drawdown }}%
+
+      • 总交易次数: {{ ea.total_trades }}
+
+      • 平均盈利: {{ ea.avg_profit }}
+
+      • 平均亏损: {{ ea.avg_loss }}
+
+
+      💡 使用方法:
+
+      1. 输入: `ea_start_{{ ea.id }}`
+
+      2. 设置运行时长: `Xh` 或 `Xd`
+
+      3. 设置止盈止损: `X%Y%`
+
+      '

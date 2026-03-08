@@ -1,0 +1,313 @@
+# Data Source Configuration / 数据源配置
+# Validates: Requirements 2.1, 2.2, 2.3
+
+# ============================================
+# 数据源配置说明 / Data Source Configuration Guide
+# ============================================
+# source_id: 数据源唯一标识符 / Unique identifier for the data source
+# source_type: 数据源类型 / Type of data source (economic_calendar, market_data, news_api, etc.)
+# api_endpoint: API端点URL / API endpoint URL
+# credentials: API认证信息 / API authentication credentials
+# schedule_type: 调度类型 / Scheduling type (cron or interval)
+# schedule_config: 调度配置 / Scheduling configuration
+#   - cron: Cron表达式 / Cron expression (e.g., "0 */6 * * *" = every 6 hours)
+#   - seconds: 间隔秒数 / Interval in seconds
+# enabled: 是否启用 / Whether the source is enabled
+# retry_count: 失败重试次数 / Number of retries on failure
+# timeout: 请求超时时间(秒) / Request timeout in seconds
+# parameters: 额外参数 / Additional parameters for the API
+# cache: 缓存配置 / Cache configuration
+#   - enabled: 是否启用缓存 / Whether caching is enabled
+#   - ttl: 缓存生存时间(秒) / Cache time-to-live in seconds
+
+sources:
+  # ============================================
+  # 经济日历数据源 / Economic Calendar Data Source
+  # ============================================
+  # 用途: 获取重要经济事件和数据发布时间
+  # Purpose: Fetch important economic events and data release schedules
+  - source_id: "forexfactory_calendar"
+    source_type: "economic_calendar"  # 经济日历类型
+    api_endpoint: "https://api.forexfactory.com/calendar"
+    credentials:
+      api_key: "${FOREXFACTORY_API_KEY}"  # 从环境变量读取API密钥
+    schedule_type: "cron"  # 使用Cron调度
+    schedule_config:
+      cron: "0 */6 * * *"  # 每6小时执行一次 / Every 6 hours
+    enabled: true  # 启用此数据源
+    retry_count: 3  # 失败后重试3次
+    timeout: 30  # 30秒超时
+    
+  # ============================================
+  # 市场数据源 / Market Data Source
+  # ============================================
+  # 用途: 获取实时和历史市场数据(外汇、股票等)
+  # Purpose: Fetch real-time and historical market data (forex, stocks, etc.)
+  - source_id: "alpha_vantage_forex"
+    source_type: "market_data"  # 市场数据类型
+    api_endpoint: "https://www.alphavantage.co/query"
+    credentials:
+      api_key: "${ALPHAVANTAGE_API_KEY}"  # Alpha Vantage API密钥
+    schedule_type: "interval"  # 使用固定间隔调度
+    schedule_config:
+      seconds: 300  # 每5分钟执行一次 / Every 5 minutes
+    enabled: true
+    retry_count: 3
+    timeout: 30
+    
+  # ============================================
+  # 新闻API数据源 / News API Data Source
+  # ============================================
+  # 用途: 获取金融相关新闻文章
+  # Purpose: Fetch finance-related news articles
+  - source_id: "newsapi_finance"
+    source_type: "news_api"  # 新闻API类型
+    api_endpoint: "https://newsapi.org/v2/everything"
+    credentials:
+      api_key: "${NEWSAPI_KEY}"  # NewsAPI密钥
+    schedule_type: "interval"
+    schedule_config:
+      seconds: 600  # 每10分钟执行一次 / Every 10 minutes
+    enabled: true
+    retry_count: 3
+    timeout: 30
+    parameters:
+      q: "forex OR trading OR finance"  # 搜索关键词: 外汇、交易、金融
+      language: "en"  # 语言: 英文
+      sortBy: "publishedAt"  # 按发布时间排序
+      pageSize: 20  # 每次获取20篇文章
+    
+  # ============================================
+  # 社交媒体数据源 (Twitter/X) / Social Media Data Source
+  # ============================================
+  # 用途: 获取Twitter上的金融相关推文和情绪
+  # Purpose: Fetch finance-related tweets and sentiment from Twitter
+  - source_id: "twitter_finance"
+    source_type: "social_media"  # 社交媒体类型
+    api_endpoint: "https://api.twitter.com/2/tweets/search/recent"
+    credentials:
+      api_key: "${TWITTER_API_KEY}"  # Twitter API密钥
+      api_secret: "${TWITTER_API_SECRET}"  # Twitter API密钥
+    schedule_type: "interval"
+    schedule_config:
+      seconds: 900  # 每15分钟执行一次 / Every 15 minutes
+    enabled: false  # 默认禁用，需要Twitter API访问权限 / Disabled by default, requires Twitter API access
+    retry_count: 3
+    timeout: 30
+    parameters:
+      query: "(forex OR trading OR #forex) lang:en"  # 搜索查询: 外汇相关英文推文
+      max_results: 50  # 每次最多获取50条推文
+  
+  # ============================================
+  # 学术论文数据源 - arXiv / Academic Papers - arXiv
+  # ============================================
+  # 用途: 获取金融、统计、机器学习相关的最新学术论文
+  # Purpose: Fetch latest academic papers on finance, statistics, and machine learning
+  - source_id: "arxiv_finance"
+    source_type: "academic_paper"  # 学术论文类型
+    api_endpoint: "http://export.arxiv.org/api/query"
+    credentials: {}  # arXiv API免费且无需认证 / arXiv API is free and doesn't require authentication
+    schedule_type: "cron"
+    schedule_config:
+      cron: "0 0 * * *"  # 每天午夜执行 / Daily at midnight
+    enabled: true
+    retry_count: 3
+    timeout: 60  # 学术论文API可能较慢，设置60秒超时
+    parameters:
+      search_query: "cat:q-fin.* OR cat:cs.CE OR cat:stat.ML"  # 搜索类别: 量化金融、计算工程、统计机器学习
+      sortBy: "submittedDate"  # 按提交日期排序
+      sortOrder: "descending"  # 降序(最新的在前)
+      max_results: 50  # 每次最多获取50篇论文
+  
+  # ============================================
+  # 学术论文数据源 - SSRN / Academic Papers - SSRN
+  # ============================================
+  # 用途: 获取社会科学研究网络(SSRN)上的金融经济学论文
+  # Purpose: Fetch finance and economics papers from Social Science Research Network
+  - source_id: "ssrn_finance"
+    source_type: "academic_paper"
+    api_endpoint: "https://api.ssrn.com/v1/papers"
+    credentials:
+      api_key: "${SSRN_API_KEY}"  # SSRN API密钥
+    schedule_type: "cron"
+    schedule_config:
+      cron: "0 2 * * *"  # 每天凌晨2点执行 / Daily at 2 AM
+    enabled: false  # 默认禁用，需要SSRN API访问权限 / Disabled by default, requires SSRN API access
+    retry_count: 3
+    timeout: 60
+    parameters:
+      subject: "Finance,Economics,Quantitative Finance"  # 主题: 金融、经济学、量化金融
+      sortBy: "date"  # 按日期排序
+      limit: 50  # 每次最多获取50篇论文
+  
+  # ============================================
+  # 学术论文数据源 - Google Scholar / Academic Papers - Google Scholar
+  # ============================================
+  # 用途: 通过SerpAPI获取Google Scholar上的量化交易相关论文
+  # Purpose: Fetch quantitative trading papers from Google Scholar via SerpAPI
+  - source_id: "google_scholar_finance"
+    source_type: "academic_paper"
+    api_endpoint: "https://serpapi.com/search"
+    credentials:
+      api_key: "${SERPAPI_KEY}"  # SerpAPI密钥
+    schedule_type: "cron"
+    schedule_config:
+      cron: "0 4 * * *"  # 每天凌晨4点执行 / Daily at 4 AM
+    enabled: false  # 默认禁用，需要SerpAPI访问权限 / Disabled by default, requires SerpAPI access
+    retry_count: 3
+    timeout: 60
+    parameters:
+      engine: "google_scholar"  # 使用Google Scholar搜索引擎
+      q: "quantitative trading OR algorithmic trading OR financial markets"  # 搜索: 量化交易、算法交易、金融市场
+      as_ylo: "2024"  # 只获取2024年及以后的论文 / Papers from 2024 onwards
+      num: 20  # 每次获取20篇论文
+
+# ============================================
+# 因子数据源配置 / Factor Data Sources Configuration
+# ============================================
+# 这些数据源专门用于因子计算
+# 因子系统将使用这些统一的API，而不是创建单独的连接
+# These data sources are specifically for factor calculation
+# Factor system will use these unified APIs instead of creating separate connections
+
+  # ============================================
+  # 因子市场数据 / Factor Market Data
+  # ============================================
+  # 用途: 获取OHLCV数据和技术指标用于因子计算
+  # Purpose: Fetch OHLCV data and technical indicators for factor calculation
+  - source_id: "factor_market_data"
+    source_type: "factor_data"  # 因子数据类型
+    api_endpoint: "${MARKET_DATA_API_URL}"  # 市场数据API地址(从环境变量读取)
+    credentials:
+      api_key: "${MARKET_DATA_API_KEY}"
+    schedule_type: "interval"
+    schedule_config:
+      seconds: 300  # 每5分钟执行一次 / Every 5 minutes
+    enabled: true
+    retry_count: 3
+    timeout: 30
+    parameters:
+      data_types:
+        - "ohlcv"  # 开盘价、最高价、最低价、收盘价、成交量 / Open, High, Low, Close, Volume
+        - "technical_indicators"  # 技术指标(RSI, MACD, 布林带等)
+        - "intraday"  # 日内数据
+      resolution: "1D"  # 数据分辨率: 日线 / Daily data
+      extended_hours: false  # 不包含盘前盘后交易 / Exclude extended hours trading
+    cache:
+      enabled: true  # 启用缓存
+      ttl: 3600  # 缓存1小时 / 1 hour cache
+  
+  # ============================================
+  # 因子基本面数据 / Factor Fundamental Data
+  # ============================================
+  # 用途: 获取财务报表和财务比率用于基本面因子计算
+  # Purpose: Fetch financial statements and ratios for fundamental factor calculation
+  - source_id: "factor_fundamental_data"
+    source_type: "factor_data"
+    api_endpoint: "${FUNDAMENTAL_DATA_API_URL}"  # 基本面数据API地址
+    credentials:
+      api_key: "${FUNDAMENTAL_DATA_API_KEY}"
+    schedule_type: "cron"
+    schedule_config:
+      cron: "0 0 * * *"  # 每天午夜执行 / Daily at midnight
+    enabled: true
+    retry_count: 3
+    timeout: 60  # 基本面数据可能较大，设置60秒超时
+    parameters:
+      data_types:
+        - "income_statement"  # 损益表
+        - "balance_sheet"  # 资产负债表
+        - "cash_flow"  # 现金流量表
+        - "financial_ratios"  # 财务比率(P/E, P/B, ROE等)
+        - "earnings"  # 盈利数据
+      period: "quarterly"  # 季度数据 / Quarterly data
+    cache:
+      enabled: true
+      ttl: 86400  # 缓存24小时 / 24 hours cache
+  
+  # ============================================
+  # 因子另类数据 / Factor Alternative Data
+  # ============================================
+  # 用途: 获取情绪、社交媒体等另类数据用于情绪因子计算
+  # Purpose: Fetch sentiment, social media, and other alternative data for sentiment factor calculation
+  - source_id: "factor_alternative_data"
+    source_type: "factor_data"
+    api_endpoint: "${ALTERNATIVE_DATA_API_URL}"  # 另类数据API地址
+    credentials:
+      api_key: "${ALTERNATIVE_DATA_API_KEY}"
+    schedule_type: "interval"
+    schedule_config:
+      seconds: 900  # 每15分钟执行一次 / Every 15 minutes
+    enabled: true
+    retry_count: 3
+    timeout: 30
+    parameters:
+      data_types:
+        - "sentiment_score"  # 情绪评分
+        - "social_media_mentions"  # 社交媒体提及次数
+        - "news_sentiment"  # 新闻情绪
+        - "analyst_ratings"  # 分析师评级
+      sources:
+        - "twitter"  # Twitter数据源
+        - "reddit"  # Reddit数据源
+        - "news_api"  # 新闻API数据源
+    cache:
+      enabled: true
+      ttl: 1800  # 缓存30分钟 / 30 minutes cache
+  
+  # ============================================
+  # 因子宏观经济数据 / Factor Economic Data
+  # ============================================
+  # 用途: 获取宏观经济指标用于宏观因子计算
+  # Purpose: Fetch macro economic indicators for macro factor calculation
+  - source_id: "factor_economic_data"
+    source_type: "factor_data"
+    api_endpoint: "${ECONOMIC_DATA_API_URL}"  # 经济数据API地址
+    credentials:
+      api_key: "${ECONOMIC_DATA_API_KEY}"
+    schedule_type: "cron"
+    schedule_config:
+      cron: "0 */6 * * *"  # 每6小时执行一次 / Every 6 hours
+    enabled: true
+    retry_count: 3
+    timeout: 30
+    parameters:
+      indicators:
+        - "gdp"  # 国内生产总值 / Gross Domestic Product
+        - "inflation"  # 通货膨胀率 / Inflation rate
+        - "unemployment"  # 失业率 / Unemployment rate
+        - "interest_rates"  # 利率 / Interest rates
+        - "pmi"  # 采购经理人指数 / Purchasing Managers' Index
+      countries:
+        - "US"  # 美国
+        - "CN"  # 中国
+        - "EU"  # 欧盟
+    cache:
+      enabled: true
+      ttl: 21600  # 缓存6小时 / 6 hours cache
+  
+  # ============================================
+  # 因子期权数据 / Factor Options Data
+  # ============================================
+  # 用途: 获取隐含波动率、希腊字母等期权数据用于波动率因子计算
+  # Purpose: Fetch implied volatility, Greeks, and other options data for volatility factor calculation
+  - source_id: "factor_options_data"
+    source_type: "factor_data"
+    api_endpoint: "${OPTIONS_DATA_API_URL}"  # 期权数据API地址
+    credentials:
+      api_key: "${OPTIONS_DATA_API_KEY}"
+    schedule_type: "interval"
+    schedule_config:
+      seconds: 600  # 每10分钟执行一次 / Every 10 minutes
+    enabled: false  # 默认禁用(期权数据API通常较贵) / Disabled by default (options data APIs are usually expensive)
+    retry_count: 3
+    timeout: 30
+    parameters:
+      data_types:
+        - "implied_volatility"  # 隐含波动率 / Implied volatility
+        - "option_chain"  # 期权链 / Option chain
+        - "greeks"  # 希腊字母(Delta, Gamma, Theta, Vega, Rho)
+        - "put_call_ratio"  # 看跌看涨比率 / Put-call ratio
+    cache:
+      enabled: true
+      ttl: 600  # 缓存10分钟 / 10 minutes cache

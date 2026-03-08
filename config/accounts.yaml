@@ -1,0 +1,247 @@
+# Trading Accounts Configuration
+# 交易账户配置文件
+# 
+# ⚠️ 安全警告：此文件包含敏感信息，请勿分享或提交到版本控制
+# ⚠️ AI 无权限修改此文件，只能由用户手动编辑或通过 Web 后台修改
+# 
+# 支持的平台：
+# - MetaTrader 4/5 (mt4, mt5)
+# - TradingView (tradingview)
+# - 老虎证券 (tiger)
+# - 富途牛牛 (futu)
+# - 长桥证券 (longbridge)
+
+# ============================================
+# 账户列表
+# ============================================
+accounts:
+  # MetaTrader 4 示例
+  - account_id: "mt4_demo_001"
+    account_name: "MT4 模拟账户"
+    platform: "mt4"  # mt4, mt5, tradingview, tiger, futu, longbridge
+    account_type: "demo"  # demo, live
+    enabled: true
+    
+    # 连接信息
+    connection:
+      server: "MetaQuotes-Demo"
+      login: "12345678"
+      password: "${MT4_DEMO_PASSWORD}"  # 从环境变量读取
+      
+    # 账户设置
+    settings:
+      currency: "USD"
+      leverage: 100
+      timezone: "UTC"
+      
+    # 风险管理
+    risk_management:
+      max_daily_loss_percent: 5.0  # 每日最大亏损百分比
+      max_total_risk_percent: 20.0  # 总风险百分比
+      max_open_positions: 10  # 最大持仓数
+      max_drawdown_percent: 20.0  # 最大回撤百分比，达到此值强制平仓
+      force_close_on_max_drawdown: true  # 达到最大回撤时是否强制平仓
+      
+    # EA 配置
+    ea_config:
+      allowed_eas: ["scalper_v1", "trend_follower", "breakout_strategy"]
+      default_lot_size: 0.01
+      max_lot_size: 1.0
+  
+  # MetaTrader 5 示例
+  - account_id: "mt5_live_001"
+    account_name: "MT5 实盘账户"
+    platform: "mt5"
+    account_type: "live"
+    enabled: false  # 默认禁用实盘账户
+    
+    connection:
+      server: "ICMarkets-Live"
+      login: "87654321"
+      password: "${MT5_LIVE_PASSWORD}"
+      
+    settings:
+      currency: "USD"
+      leverage: 50
+      timezone: "UTC"
+      
+    risk_management:
+      max_daily_loss_percent: 3.0
+      max_total_risk_percent: 15.0
+      max_open_positions: 5
+      max_drawdown_percent: 15.0  # 实盘账户更严格的回撤控制
+      force_close_on_max_drawdown: true
+      
+    ea_config:
+      allowed_eas: ["conservative_trader"]
+      default_lot_size: 0.1
+      max_lot_size: 0.5
+  
+  # TradingView 示例
+  - account_id: "tv_demo_001"
+    account_name: "TradingView 模拟账户"
+    platform: "tradingview"
+    account_type: "demo"
+    enabled: true
+    
+    connection:
+      api_key: "${TRADINGVIEW_API_KEY}"
+      api_secret: "${TRADINGVIEW_API_SECRET}"
+      webhook_url: "https://your-webhook-url.com/tradingview"
+      
+    settings:
+      currency: "USD"
+      timezone: "America/New_York"
+      
+    risk_management:
+      max_daily_loss_percent: 5.0
+      max_total_risk_percent: 20.0
+      max_open_positions: 10
+      
+    ea_config:
+      allowed_eas: ["pine_script_strategy_v1"]
+      default_lot_size: 0.01
+      max_lot_size: 1.0
+  
+  # 老虎证券示例
+  - account_id: "tiger_demo_001"
+    account_name: "老虎证券模拟账户"
+    platform: "tiger"
+    account_type: "demo"
+    enabled: false
+    
+    connection:
+      tiger_id: "${TIGER_ID}"
+      account: "${TIGER_ACCOUNT}"
+      private_key: "${TIGER_PRIVATE_KEY}"
+      
+    settings:
+      currency: "USD"
+      market: "US"  # US, HK, CN
+      timezone: "America/New_York"
+      
+    risk_management:
+      max_daily_loss_percent: 5.0
+      max_total_risk_percent: 20.0
+      max_open_positions: 20
+      
+    ea_config:
+      allowed_eas: ["stock_momentum"]
+      default_shares: 100
+      max_shares: 1000
+  
+  # 富途牛牛示例
+  - account_id: "futu_demo_001"
+    account_name: "富途牛牛模拟账户"
+    platform: "futu"
+    account_type: "demo"
+    enabled: false
+    
+    connection:
+      host: "127.0.0.1"
+      port: 11111
+      
+    settings:
+      currency: "HKD"
+      market: "HK"  # US, HK, CN
+      timezone: "Asia/Hong_Kong"
+      
+    risk_management:
+      max_daily_loss_percent: 5.0
+      max_total_risk_percent: 20.0
+      max_open_positions: 20
+      
+    ea_config:
+      allowed_eas: ["hk_stock_strategy"]
+      default_shares: 100
+      max_shares: 1000
+  
+  # 长桥证券示例
+  - account_id: "longbridge_demo_001"
+    account_name: "长桥证券模拟账户"
+    platform: "longbridge"
+    account_type: "demo"
+    enabled: false
+    
+    connection:
+      app_key: "${LONGBRIDGE_APP_KEY}"
+      app_secret: "${LONGBRIDGE_APP_SECRET}"
+      access_token: "${LONGBRIDGE_ACCESS_TOKEN}"
+      
+    settings:
+      currency: "USD"
+      market: "US"  # US, HK, CN
+      timezone: "America/New_York"
+      
+    risk_management:
+      max_daily_loss_percent: 5.0
+      max_total_risk_percent: 20.0
+      max_open_positions: 20
+      
+    ea_config:
+      allowed_eas: ["us_stock_strategy"]
+      default_shares: 100
+      max_shares: 1000
+
+# ============================================
+# 全局设置
+# ============================================
+global_settings:
+  # 默认账户（用于快速启动）
+  default_account: "mt4_demo_001"
+  
+  # 安全设置
+  security:
+    require_2fa: false  # 是否需要双因素认证
+    session_timeout: 3600  # 会话超时（秒）
+    max_login_attempts: 5  # 最大登录尝试次数
+    
+  # 通知设置
+  notifications:
+    on_trade_open: true
+    on_trade_close: true
+    on_error: true
+    on_daily_summary: true
+    
+  # 日志设置
+  logging:
+    log_trades: true
+    log_level: "INFO"
+    retention_days: 90
+
+# ============================================
+# 平台特定配置
+# ============================================
+platform_configs:
+  mt4:
+    dll_path: "path/to/mt4/terminal.exe"
+    magic_number_range: [10000, 19999]
+    
+  mt5:
+    dll_path: "path/to/mt5/terminal64.exe"
+    magic_number_range: [20000, 29999]
+    
+  tradingview:
+    webhook_timeout: 30
+    retry_attempts: 3
+    
+  tiger:
+    api_version: "v2"
+    sandbox_mode: true
+    
+  futu:
+    protocol_version: "1.0"
+    keep_alive: true
+    
+  longbridge:
+    api_version: "v1"
+    region: "us"  # us, hk, cn
+
+# ============================================
+# 备注
+# ============================================
+# 1. 所有密码和密钥应存储在环境变量中，使用 ${VAR_NAME} 格式引用
+# 2. 实盘账户默认应设置为 enabled: false，需要用户手动启用
+# 3. 修改此文件后需要重启系统才能生效
+# 4. 建议定期备份此文件
+# 5. AI 系统无权限读取或修改此文件

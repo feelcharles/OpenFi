@@ -1,0 +1,190 @@
+# Backup Configuration
+
+# Storage backend configuration
+storage:
+  # Storage type: local, s3, gcs, azure
+  type: local
+  
+  # Local storage settings (for development/testing)
+  local:
+    base_path: backups
+  
+  # AWS S3 settings
+  s3:
+    bucket_name: openfi-backups
+    region: us-east-1
+    # Credentials can be provided here or via environment variables
+    # aws_access_key_id: ${AWS_ACCESS_KEY_ID}
+    # aws_secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+  
+  # Google Cloud Storage settings
+  gcs:
+    bucket_name: openfi-backups
+    project_id: your-project-id
+    # credentials_file: /path/to/credentials.json
+  
+  # Azure Blob Storage settings
+  azure:
+    container_name: openfi-backups
+    account_name: your-account-name
+    # account_key: ${AZURE_STORAGE_KEY}
+
+# Backup schedule
+schedule:
+  # Database backup schedule (cron format, UTC timezone)
+  database_backup:
+    enabled: true
+    cron: "0 2 * * *"  # Daily at 02:00 UTC
+    description: "Daily PostgreSQL backup using pg_dump"
+  
+  # Configuration and EA files backup schedule
+  config_ea_backup:
+    enabled: true
+    cron: "30 2 * * *"  # Daily at 02:30 UTC
+    description: "Daily backup of config/ and ea/ directories"
+  
+  # Backup cleanup schedule
+  cleanup:
+    enabled: true
+    cron: "0 3 * * 0"  # Weekly on Sundays at 03:00 UTC
+    description: "Clean up old backups according to retention policy"
+  
+  # Backup verification schedule
+  verification:
+    enabled: true
+    cron: "0 4 * * 0"  # Weekly on Sundays at 04:00 UTC
+    description: "Verify latest backup by restoring to test database"
+
+# Retention policy (in days)
+retention:
+  daily: 7      # Keep daily backups for 7 days
+  weekly: 28    # Keep weekly backups for 4 weeks
+  monthly: 365  # Keep monthly backups for 12 months
+
+# Database backup settings
+database:
+  # pg_dump options
+  format: plain  # plain, custom, directory, tar
+  compression: true
+  no_owner: true
+  no_acl: true
+  
+  # Backup timeout (seconds)
+  timeout: 600  # 10 minutes
+  
+  # Encryption
+  encrypt: true
+
+# WAL archiving settings (for point-in-time recovery)
+wal_archiving:
+  enabled: true
+  
+  # Archive directory
+  archive_dir: backups/wal_archive
+  
+  # Archive timeout (seconds) - how often to force WAL switch
+  archive_timeout: 300  # 5 minutes
+  
+  # Keep local WAL files count
+  keep_local_count: 10
+  
+  # PostgreSQL configuration recommendations
+  postgresql_config:
+    wal_level: replica
+    archive_mode: on
+    max_wal_senders: 3
+    wal_keep_size: 1GB  # PostgreSQL 13+
+
+# Backup verification settings
+verification:
+  # Test database prefix
+  test_db_prefix: test_restore_
+  
+  # Verification timeout (seconds)
+  timeout: 600  # 10 minutes
+  
+  # Critical tables to validate
+  critical_tables:
+    - users
+    - ea_profiles
+    - trades
+    - brokers
+    - trading_accounts
+    - signals
+    - notifications
+    - alert_rules
+    - circuit_breaker_states
+    - audit_logs
+  
+  # Integrity checks to run
+  checks:
+    - foreign_keys
+    - indexes
+    - sequences
+    - table_existence
+    - row_counts
+
+# Notification settings for backup events
+notifications:
+  # Send notifications on backup failures
+  on_failure: true
+  
+  # Send notifications on successful backups
+  on_success: false
+  
+  # Send notifications on verification failures
+  on_verification_failure: true
+  
+  # Notification channels (from push_config.yaml)
+  channels:
+    - email
+    - telegram
+
+# Disaster recovery settings
+disaster_recovery:
+  # RTO (Recovery Time Objective) targets in minutes
+  rto:
+    database_loss: 120      # 2 hours
+    data_corruption: 240    # 4 hours
+    config_loss: 60         # 1 hour
+    service_failure: 30     # 30 minutes
+  
+  # RPO (Recovery Point Objective) targets in hours
+  rpo:
+    database: 24            # Last daily backup
+    config: 24              # Last daily backup
+    wal_archive: 0.083      # 5 minutes (archive_timeout)
+  
+  # Quarterly DR test schedule
+  test_schedule:
+    - quarter: Q1
+      month: 1
+      day: 15
+      scenario: complete_database_recovery
+    - quarter: Q2
+      month: 4
+      day: 15
+      scenario: point_in_time_recovery
+    - quarter: Q3
+      month: 7
+      day: 15
+      scenario: configuration_recovery
+    - quarter: Q4
+      month: 10
+      day: 15
+      scenario: full_system_recovery
+
+# Logging
+logging:
+  # Log backup operations
+  enabled: true
+  
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: INFO
+  
+  # Log file
+  file: logs/backup.log
+  
+  # Log rotation
+  max_bytes: 10485760  # 10 MB
+  backup_count: 5

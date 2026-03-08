@@ -1,0 +1,867 @@
+# Factor Analysis System Configuration
+# 因子分析系统配置文件
+# 
+# 重要说明：
+# - 本配置文件定义因子分析与量化回测系统的所有工作参数
+# - 支持环境变量替换（使用 ${VAR_NAME} 格式）
+# - 所有超时时间单位为秒，除非另有说明
+# - 所有时间相关配置使用 UTC 时区
+# 
+# 验证需求: Requirements 1.1, 1.3, 1.6, 1.7, 2.8
+
+# ============================================
+# 因子库配置
+# ============================================
+factor_library:
+  # 因子库目录路径（相对于项目根目录）
+  # Validates: Requirements 1.6, 3.2
+  path: "factors/"
+  
+  # 是否启用因子热重载（无需重启系统即可加载新因子）
+  # Validates: Requirements 3.7
+  auto_reload: true
+  
+  # 热重载检查间隔（秒）
+  reload_interval: 60
+  
+  # 单个因子文件最大大小（字节）
+  max_factor_size: 1048576  # 1MB
+  
+  # 允许的因子文件扩展名
+  allowed_extensions: [".py"]
+  
+  # 因子代码安全检查
+  # Validates: Requirements 3.10
+  security:
+    # 是否启用沙箱环境
+    enable_sandbox: true
+    
+    # 因子代码最大执行时间（秒）
+    max_execution_time: 10
+    
+    # 允许的导入模块
+    allowed_imports:
+      - "pandas"
+      - "numpy"
+      - "datetime"
+      - "math"
+      - "statistics"
+    
+    # 禁止的操作
+    forbidden_operations:
+      - "open"
+      - "eval"
+      - "exec"
+      - "__import__"
+      - "compile"
+      - "file"
+      - "input"
+      - "raw_input"
+
+# ============================================
+# 数据源配置
+# ============================================
+# Validates: Requirements 2.1, 2.2, 2.3, 2.8
+# 
+# 重要说明：因子系统使用 config/fetch_sources.yaml 中定义的统一数据源
+# 这确保了所有模块（fetch engine、factor system、EA system）使用相同的API配置
+# 
+data_sources:
+  # 使用统一的数据源配置文件
+  # Validates: Requirements 2.8
+  use_fetch_sources_config: true
+  fetch_sources_config_path: "config/fetch_sources.yaml"
+  
+  # 因子系统使用的数据源ID（在 fetch_sources.yaml 中定义）
+  # These source IDs map to entries in fetch_sources.yaml
+  source_ids:
+    market_data: "factor_market_data"        # OHLCV and technical indicators
+    fundamental_data: "factor_fundamental_data"  # Financial statements and ratios
+    alternative_data: "factor_alternative_data"  # Sentiment, social media
+    economic_data: "factor_economic_data"    # Macro indicators
+    options_data: "factor_options_data"      # Implied volatility, Greeks
+    news_data: "newsapi_finance"             # News API (shared with fetch engine)
+  
+  # 数据源适配器映射
+  # Maps data source types to adapter classes
+  adapters:
+    market_data: "openfi_lite.factor_system.data_adapter.MarketDataAdapter"
+    news_data: "openfi_lite.factor_system.data_adapter.NewsDataAdapter"
+    fundamental_data: "openfi_lite.factor_system.data_adapter.FactorDataAdapter"
+    alternative_data: "openfi_lite.factor_system.data_adapter.FactorDataAdapter"
+    economic_data: "openfi_lite.factor_system.data_adapter.FactorDataAdapter"
+    options_data: "openfi_lite.factor_system.data_adapter.FactorDataAdapter"
+  
+  # 默认配置（如果 fetch_sources.yaml 中没有指定）
+  # Default settings if not specified in fetch_sources.yaml
+  defaults:
+    cache_ttl: 3600  # 1小时
+    timeout: 30      # 30秒
+    retry_attempts: 3
+    retry_delay: 1
+    retry_backoff_factor: 2
+
+# ============================================
+# 因子计算引擎配置
+# ============================================
+# Validates: Requirements 4.1-4.11
+engine:
+  # 并行计算配置
+  # Validates: Requirements 4.10
+  max_workers: 4  # 最大并行工作进程数
+  enable_parallel: true  # 是否启用并行计算
+  
+  # 超时配置（秒）
+  # Validates: Requirements 4.2
+  calculation_timeout: 5  # 单因子计算超时
+  batch_calculation_timeout: 60  # 批量计算超时
+  
+  # 内存限制（字节）
+  memory_limit: 4294967296  # 4GB
+  
+  # 增量计算配置
+  # Validates: Requirements 4.4
+  incremental_calculation:
+    enabled: true
+    # 增量计算的最小数据点数
+    min_data_points: 10
+  
+  # 定时任务配置
+  # Validates: Requirements 4.7
+  scheduled_tasks:
+    # 每日因子计算任务
+    - name: "daily_factor_calculation"
+      enabled: false
+      # Cron表达式：工作日18:00 UTC
+      cron: "0 18 * * 1-5"
+      factors: []  # 要计算的因子ID列表，空表示所有因子
+      symbols: []  # 要计算的交易品种列表，空表示所有品种
+  
+  # 结果存储配置
+  # Validates: Requirements 4.6
+  result_storage:
+    # 是否自动存储到数据库
+    auto_save: true
+    # 批量插入大小
+    batch_insert_size: 1000
+
+# ============================================
+# 因子管理器配置
+# ============================================
+# Validates: Requirements 3.1-3.10
+factor_manager:
+  # 因子加载配置
+  loading:
+    # 启动时是否自动加载所有因子
+    auto_load_on_startup: true
+    
+    # 加载失败时的处理方式
+    # - "skip": 跳过失败的因子，继续加载其他因子
+    # - "abort": 中止加载过程
+    on_load_failure: "skip"
+  
+  # 因子验证配置
+  # Validates: Requirements 3.6, 3.9
+  validation:
+    # 是否验证因子接口
+    validate_interface: true
+    
+    # 必需的因子元数据字段
+    required_metadata:
+      - "name"
+      - "description"
+      - "category"
+      - "version"
+      - "required_data"
+    
+    # 必需的因子方法
+    required_methods:
+      - "calculate"
+
+# ============================================
+# 回测引擎配置
+# ============================================
+# Validates: Requirements 5.1-5.12
+backtest:
+  # 默认回测参数
+  # Validates: Requirements 5.2, 5.3
+  defaults:
+    initial_capital: 100000  # 初始资金
+    commission: 0.001  # 手续费率（0.1%）
+    slippage: 0.0005  # 滑点（0.05%）
+    leverage: 1.0  # 杠杆倍数
+  
+  # 回测限制
+  max_backtest_years: 10  # 最大回测年限
+  
+  # 超时配置（秒）
+  # Validates: Requirements 5.8
+  timeout: 60
+  
+  # 风险管理配置
+  risk_management:
+    # 单个持仓最大比例
+    max_position_size: 0.2  # 20%
+    
+    # 总敞口最大比例
+    max_total_exposure: 1.0  # 100%
+    
+    # 止损比例
+    stop_loss: 0.05  # 5%
+    
+    # 止盈比例
+    take_profit: 0.15  # 15%
+  
+  # 绩效指标配置
+  # Validates: Requirements 5.4, 5.5
+  metrics:
+    # 无风险利率（用于计算夏普比率）
+    risk_free_rate: 0.02  # 2%
+    
+    # 是否计算所有指标
+    calculate_all: true
+    
+    # 必需的绩效指标
+    required_metrics:
+      - "total_return"
+      - "annual_return"
+      - "max_drawdown"
+      - "sharpe_ratio"
+      - "win_rate"
+      - "profit_loss_ratio"
+  
+  # 前视偏差检测配置
+  # Validates: Requirements 5.11
+  lookahead_detection:
+    enabled: true
+    # 是否在检测到前视偏差时中止回测
+    abort_on_detection: true
+  
+  # 回测结果存储配置
+  # Validates: Requirements 5.10
+  result_storage:
+    # 是否保存到数据库
+    save_to_db: true
+    
+    # 是否保存净值曲线
+    save_equity_curve: true
+    
+    # 是否保存交易明细
+    save_trade_details: true
+
+# ============================================
+# 因子筛选配置
+# ============================================
+# Validates: Requirements 6.1-6.10
+screening:
+  # 最大筛选标的数量
+  # Validates: Requirements 6.8
+  max_symbols: 10000
+  
+  # 超时配置（秒）
+  timeout: 3
+  
+  # 默认筛选参数
+  defaults:
+    # 默认选择前N个标的
+    top_n: 10
+    
+    # 默认标准化方法
+    # - "zscore": Z-score标准化
+    # - "minmax": Min-Max标准化
+    # - "rank": 排名标准化
+    normalization_method: "zscore"
+    
+    # 是否启用行业中性化
+    # Validates: Requirements 6.10
+    industry_neutral: false
+  
+  # 行业分类标准
+  industry_classification: "GICS"  # GICS, ICB, etc.
+  
+  # 筛选预设配置
+  presets:
+    # 动量选股预设
+    - name: "momentum_screening"
+      description: "基于动量因子的选股策略"
+      factors:
+        - factor_id: "momentum_20d"
+          weight: 1.0
+      top_n: 10
+      normalization_method: "zscore"
+      industry_neutral: false
+
+# ============================================
+# 因子组合优化配置
+# ============================================
+# Validates: Requirements 7.1-7.10
+optimization:
+  # 支持的优化方法
+  # Validates: Requirements 7.3
+  methods:
+    - "equal_weight"  # 等权
+    - "ic_weighted"  # IC加权
+    - "max_sharpe"  # 最大化夏普比率
+  
+  # 默认优化方法
+  default_method: "max_sharpe"
+  
+  # 回看周期（交易日）
+  # Validates: Requirements 7.4
+  lookback_period: 252  # 1年
+  
+  # 再平衡频率（交易日）
+  rebalance_frequency: 20  # 约1个月
+  
+  # 超时配置（秒）
+  # Validates: Requirements 7.8
+  timeout: 30
+  
+  # 权重约束
+  constraints:
+    # 单个因子最小权重
+    min_weight: 0.0
+    
+    # 单个因子最大权重
+    max_weight: 0.5
+    
+    # 因子间最大相关性
+    # Validates: Requirements 7.9
+    max_correlation: 0.8
+  
+  # 动态权重调整配置
+  # Validates: Requirements 7.10
+  dynamic_rebalance:
+    enabled: false
+    # 滚动窗口大小（交易日）
+    window_size: 60
+
+# ============================================
+# 缓存配置
+# ============================================
+cache:
+  # 是否启用缓存
+  enabled: true
+  
+  # 缓存后端
+  backend: "redis"
+  
+  # Redis配置
+  redis:
+    host: "${REDIS_HOST:localhost}"
+    port: "${REDIS_PORT:6379}"
+    password: "${REDIS_PASSWORD:}"
+    db: 2  # 使用数据库2（避免与其他模块冲突）
+  
+  # 默认缓存TTL（秒）
+  default_ttl: 3600  # 1小时
+  
+  # 不同数据类型的TTL配置
+  ttl_by_type:
+    factor_values: 3600  # 因子值缓存1小时
+    market_data: 1800  # 市场数据缓存30分钟
+    backtest_results: 86400  # 回测结果缓存24小时
+    screening_results: 300  # 筛选结果缓存5分钟
+  
+  # 最大缓存条目数
+  max_size: 10000
+  
+  # 缓存键前缀
+  key_prefix: "factor_system:"
+
+# ============================================
+# LLM集成配置
+# ============================================
+# Validates: Requirements 8.1-8.10
+llm:
+  # 是否启用LLM分析
+  # Validates: Requirements 8.1, 8.6
+  enabled: true
+  
+  # 使用现有的LLM配置
+  # 从 config/llm_config.yaml 读取配置
+  # Validates: Requirements 8.5, 8.10
+  use_global_config: true
+  
+  # LLM分析超时（秒）
+  # Validates: Requirements 8.9
+  analysis_timeout: 20
+  
+  # 生成参数
+  generation:
+    max_tokens: 2000
+    temperature: 0.7
+  
+  # 分析类型配置
+  # Validates: Requirements 8.2, 8.3, 8.4
+  analysis_types:
+    # 因子表现分析
+    performance_analysis:
+      enabled: true
+      prompt_template: |
+        请分析以下因子的回测表现：
+        
+        因子名称: {factor_name}
+        因子类别: {category}
+        回测周期: {start_date} 至 {end_date}
+        
+        绩效指标:
+        • 年化收益率: {annual_return:.2%}
+        • 最大回撤: {max_drawdown:.2%}
+        • 夏普比率: {sharpe_ratio:.2f}
+        • 胜率: {win_rate:.2%}
+        • 盈亏比: {profit_loss_ratio:.2f}
+        • 总交易次数: {total_trades}
+        
+        请提供：
+        1. 因子表现评价（优秀/良好/一般/较差）
+        2. 主要优势（至少2点）
+        3. 潜在风险（至少2点）
+        4. 适用市场环境
+        5. 改进建议（至少2点）
+    
+    # 因子组合建议
+    combination_suggestion:
+      enabled: true
+      prompt_template: |
+        基于以下因子的历史表现，请推荐最佳的因子组合策略：
+        
+        {factors_summary}
+        
+        请提供：
+        1. 推荐的因子组合（3-5个因子）
+        2. 建议的权重分配
+        3. 组合的预期特性（收益、风险、相关性）
+        4. 适用场景和注意事项
+    
+    # 自然语言查询
+    natural_language_query:
+      enabled: true
+      # Validates: Requirements 8.8
+      max_query_length: 500
+  
+  # 结果存储配置
+  # Validates: Requirements 8.7
+  result_storage:
+    save_to_db: true
+    # 是否缓存分析结果
+    cache_results: true
+    cache_ttl: 3600  # 1小时
+
+# ============================================
+# 推送服务集成配置
+# ============================================
+# Validates: Requirements 9.1-9.10
+push_integration:
+  # 是否启用推送集成
+  enabled: false
+  
+  # 推送前回测配置
+  # Validates: Requirements 9.2, 9.3
+  pre_push_backtest:
+    enabled: true
+    
+    # 回测参数
+    lookback_days: 60  # 回看天数
+    initial_capital: 10000
+    commission: 0.0001
+    slippage: 0.0002
+    
+    # 绩效阈值（低于阈值则过滤推送）
+    # Validates: Requirements 9.4
+    thresholds:
+      min_sharpe_ratio: 1.0
+      max_drawdown: -0.2  # -20%
+      min_win_rate: 0.5  # 50%
+      min_profit_loss_ratio: 1.5
+      min_trade_count: 10  # 最小交易次数
+    
+    # 超时配置（秒）
+    # Validates: Requirements 9.9
+    timeout: 10
+  
+  # 因子条件过滤配置
+  # Validates: Requirements 9.5, 9.6
+  factor_filtering:
+    enabled: true
+    
+    # 因子条件列表
+    conditions:
+      - factor_name: "momentum_20d"
+        operator: ">"  # >, <, >=, <=, ==, !=
+        threshold: 0.05
+        weight: 1.0
+      
+      - factor_name: "value_score"
+        operator: ">"
+        threshold: 0.7
+        weight: 0.8
+    
+    # 组合逻辑
+    # - "AND": 所有条件都满足
+    # - "OR": 任一条件满足
+    combination_logic: "AND"
+    
+    # 最小综合得分（加权组合后）
+    min_composite_score: 0.7
+  
+  # 推送消息增强配置
+  # Validates: Requirements 9.7
+  message_enhancement:
+    # 是否在推送消息中包含因子分析
+    include_factor_analysis: true
+    
+    # 消息模板
+    message_template: |
+      
+      📊 **因子分析**
+      
+      {factor_info}
+      
+      {backtest_summary}
+  
+  # 过滤日志配置
+  # Validates: Requirements 9.10
+  filtering_log:
+    # 是否记录过滤的推送
+    log_filtered: true
+    
+    # 是否保存到数据库
+    save_to_db: true
+
+# ============================================
+# 数据库配置
+# ============================================
+# Validates: Requirements 14.1-14.10
+database:
+  # 使用现有的数据库连接
+  # Validates: Requirements 16.3
+  use_global_connection: true
+  
+  # 连接池配置
+  pool:
+    size: 10
+    max_overflow: 20
+    timeout: 30
+    recycle: 3600  # 连接回收时间（秒）
+  
+  # 查询超时（秒）
+  query_timeout: 30
+  
+  # 批量操作配置
+  # Validates: Requirements 14.8
+  batch:
+    insert_size: 1000
+    update_size: 500
+  
+  # 数据保留策略
+  # Validates: Requirements 14.9
+  retention:
+    # 因子值保留天数（0表示永久保留）
+    factor_values_days: 365  # 1年
+    
+    # 回测结果保留天数
+    backtest_results_days: 180  # 6个月
+    
+    # 筛选结果保留天数
+    screening_results_days: 30  # 1个月
+    
+    # LLM分析日志保留天数
+    analysis_logs_days: 90  # 3个月
+
+# ============================================
+# 性能和监控配置
+# ============================================
+# Validates: Requirements 17.1-17.10
+performance:
+  # 性能阈值（秒）
+  thresholds:
+    # Validates: Requirements 17.1
+    max_factor_calculation_time: 5
+    max_batch_calculation_time: 60
+    
+    # Validates: Requirements 17.2
+    max_backtest_time: 60
+    
+    # Validates: Requirements 17.3
+    max_screening_time: 3
+    
+    max_optimization_time: 30
+  
+  # 告警阈值
+  alert_thresholds:
+    # 计算失败率
+    calculation_failure_rate: 0.1  # 10%
+    
+    # API超时率
+    api_timeout_rate: 0.2  # 20%
+    
+    # 内存使用率
+    memory_usage: 0.9  # 90%
+    
+    # CPU使用率
+    cpu_usage: 0.8  # 80%
+  
+  # 监控配置
+  # Validates: Requirements 16.5
+  monitoring:
+    # 是否启用监控
+    enabled: true
+    
+    # 指标收集间隔（秒）
+    collection_interval: 60
+    
+    # Prometheus指标配置
+    prometheus:
+      enabled: true
+      port: 9090
+      path: "/metrics"
+
+# ============================================
+# 日志配置
+# ============================================
+# Validates: Requirements 16.4
+logging:
+  # 日志级别
+  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+  
+  # 日志格式
+  # - "json": JSON格式（推荐用于生产环境）
+  # - "text": 文本格式（推荐用于开发环境）
+  format: "json"
+  
+  # 日志文件配置
+  file:
+    path: "logs/factor_system.log"
+    max_size: 104857600  # 100MB
+    backup_count: 10
+    encoding: "utf-8"
+  
+  # 控制台输出配置
+  console:
+    enabled: true
+    level: "INFO"
+  
+  # 日志内容配置
+  content:
+    # 是否包含堆栈跟踪
+    include_stacktrace: true
+    
+    # 是否包含用户信息
+    include_user_info: true
+    
+    # 是否包含请求ID
+    include_request_id: true
+
+# ============================================
+# 安全配置
+# ============================================
+# Validates: Requirements 19.1-19.10
+security:
+  # API安全配置
+  api:
+    # 是否启用认证
+    # Validates: Requirements 19.3
+    enable_authentication: true
+    
+    # 是否启用授权
+    # Validates: Requirements 19.4
+    enable_authorization: true
+    
+    # 速率限制
+    # Validates: Requirements 19.8
+    rate_limit:
+      enabled: true
+      requests_per_minute: 60
+      requests_per_hour: 1000
+  
+  # 输入验证配置
+  # Validates: Requirements 19.1
+  input_validation:
+    enabled: true
+    
+    # 最大输入长度
+    max_input_length:
+      factor_name: 100
+      factor_code: 1048576  # 1MB
+      description: 1000
+  
+  # 敏感信息加密配置
+  # Validates: Requirements 19.2
+  encryption:
+    enabled: true
+    algorithm: "AES-256-GCM"
+    # 加密密钥（应从环境变量读取）
+    key: "${ENCRYPTION_KEY}"
+  
+  # 审计日志配置
+  # Validates: Requirements 19.5
+  audit_log:
+    enabled: true
+    
+    # 需要审计的操作
+    audited_operations:
+      - "factor_create"
+      - "factor_update"
+      - "factor_delete"
+      - "backtest_run"
+      - "screening_execute"
+      - "optimization_run"
+    
+    # 审计日志存储
+    storage:
+      save_to_db: true
+      save_to_file: true
+      file_path: "logs/audit.log"
+  
+  # HTTPS配置
+  # Validates: Requirements 19.9
+  https:
+    enabled: true
+    enforce: true  # 是否强制使用HTTPS
+
+# ============================================
+# 错误处理配置
+# ============================================
+# Validates: Requirements 18.1-18.10
+error_handling:
+  # 重试配置
+  # Validates: Requirements 18.3
+  retry:
+    max_attempts: 3
+    initial_delay: 1  # 秒
+    backoff_factor: 2
+    max_delay: 60  # 最大延迟（秒）
+  
+  # 断路器配置
+  # Validates: Requirements 18.9
+  circuit_breaker:
+    enabled: true
+    failure_threshold: 5  # 失败次数阈值
+    timeout: 60  # 断路器打开时间（秒）
+    half_open_max_calls: 3  # 半开状态最大调用次数
+  
+  # 降级策略配置
+  fallback:
+    # 数据源不可用时的处理
+    # - "use_cache": 使用缓存数据
+    # - "skip": 跳过该数据源
+    # - "fail": 返回错误
+    on_data_source_unavailable: "use_cache"
+    
+    # 计算超时时的处理
+    on_calculation_timeout: "return_partial"
+    
+    # 回测失败时的处理
+    on_backtest_failure: "return_error"
+  
+  # 错误通知配置
+  notification:
+    # 是否发送错误告警
+    enabled: true
+    
+    # 告警级别
+    # - "critical": 仅关键错误
+    # - "error": 所有错误
+    # - "warning": 包含警告
+    alert_level: "error"
+  
+  # 健康检查配置
+  # Validates: Requirements 18.10
+  health_check:
+    enabled: true
+    endpoint: "/health"
+    interval: 60  # 检查间隔（秒）
+    
+    # 检查项
+    checks:
+      - "database"
+      - "cache"
+      - "data_sources"
+      - "factor_library"
+
+# ============================================
+# 默认时间窗口和频率配置
+# ============================================
+# Validates: Requirements 1.7
+defaults:
+  # 默认时间窗口（交易日）
+  timeframe:
+    short_term: 20  # 短期：约1个月
+    medium_term: 60  # 中期：约3个月
+    long_term: 252  # 长期：约1年
+  
+  # 默认计算频率
+  frequency:
+    # - "daily": 每日
+    # - "weekly": 每周
+    # - "monthly": 每月
+    calculation: "daily"
+    
+    # 再平衡频率
+    rebalance: "monthly"
+  
+  # 默认交易品种列表（空表示所有品种）
+  symbols: []
+  
+  # 默认因子类别
+  factor_categories:
+    - "technical"
+    - "fundamental"
+    - "sentiment"
+    - "alternative"
+
+# ============================================
+# 开发和测试配置
+# ============================================
+development:
+  # 是否启用调试模式
+  debug: false
+  
+  # 是否启用详细日志
+  verbose_logging: false
+  
+  # 测试配置
+  testing:
+    # 是否使用测试数据库
+    use_test_db: false
+    
+    # 是否使用模拟数据源
+    use_mock_data_sources: false
+    
+    # 测试数据目录
+    test_data_dir: "tests/data/"
+  
+  # 性能分析配置
+  profiling:
+    enabled: false
+    output_dir: "profiling/"
+
+# ============================================
+# 特性开关
+# ============================================
+features:
+  # 是否启用因子编辑器
+  factor_editor: true
+  
+  # 是否启用因子选股页面
+  factor_screening_ui: true
+  
+  # 是否启用回测可视化
+  backtest_visualization: true
+  
+  # 是否启用EA回测集成
+  ea_backtest_integration: true
+  
+  # 是否启用LLM分析
+  llm_analysis: true
+  
+  # 是否启用推送集成
+  push_integration: false
+  
+  # 是否启用因子组合优化
+  factor_optimization: true
+  
+  # 是否启用定时任务
+  scheduled_tasks: false

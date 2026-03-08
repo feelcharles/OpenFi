@@ -1,0 +1,270 @@
+# Keywords Configuration
+# 关键词配置文件
+# 
+# 用于信息监控和筛选的关键词词条
+# 分为4种分类：政策数据、新闻、舆情与核查、机会监控
+
+# ============================================
+# 关键词词条（4种分类）
+# ============================================
+
+# 分类1：政策数据
+policy_data:
+  - keyword_zh: "利率决议"
+    keyword_en: "interest rate decision"
+    priority: "critical"  # critical, high, medium
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "非农就业"
+    keyword_en: "non-farm payroll"
+    priority: "critical"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "通货膨胀"
+    keyword_en: "inflation"
+    priority: "critical"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "国内生产总值"
+    keyword_en: "GDP"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "消费者物价指数"
+    keyword_en: "CPI"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "生产者物价指数"
+    keyword_en: "PPI"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "失业率"
+    keyword_en: "unemployment rate"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "零售销售"
+    keyword_en: "retail sales"
+    priority: "medium"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "贸易平衡"
+    keyword_en: "trade balance"
+    priority: "medium"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "央行会议"
+    keyword_en: "central bank meeting"
+    priority: "critical"
+    enabled: true
+    auto_translate: true
+
+# 分类2：新闻
+news:
+  - keyword_zh: "量化交易"
+    keyword_en: "quantitative trading"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "算法交易"
+    keyword_en: "algorithmic trading"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "高频交易"
+    keyword_en: "high frequency trading"
+    priority: "medium"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "市场波动"
+    keyword_en: "market volatility"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "金融危机"
+    keyword_en: "financial crisis"
+    priority: "critical"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "经济衰退"
+    keyword_en: "economic recession"
+    priority: "critical"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "货币政策"
+    keyword_en: "monetary policy"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "财政政策"
+    keyword_en: "fiscal policy"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+
+# 分类3：舆情与核查
+sentiment_verification:
+  - keyword_zh: "市场情绪"
+    keyword_en: "market sentiment"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "恐慌指数"
+    keyword_en: "VIX"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "看涨"
+    keyword_en: "bullish"
+    priority: "medium"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "看跌"
+    keyword_en: "bearish"
+    priority: "medium"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "谣言"
+    keyword_en: "rumor"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "假新闻"
+    keyword_en: "fake news"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "事实核查"
+    keyword_en: "fact check"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "市场操纵"
+    keyword_en: "market manipulation"
+    priority: "critical"
+    enabled: true
+    auto_translate: true
+
+# 分类4：机会监控
+opportunity_monitoring:
+  - keyword_zh: "突破"
+    keyword_en: "breakout"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "支撑位"
+    keyword_en: "support level"
+    priority: "medium"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "阻力位"
+    keyword_en: "resistance level"
+    priority: "medium"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "趋势反转"
+    keyword_en: "trend reversal"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "套利机会"
+    keyword_en: "arbitrage opportunity"
+    priority: "critical"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "价格异常"
+    keyword_en: "price anomaly"
+    priority: "high"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "流动性危机"
+    keyword_en: "liquidity crisis"
+    priority: "critical"
+    enabled: true
+    auto_translate: true
+    
+  - keyword_zh: "闪崩"
+    keyword_en: "flash crash"
+    priority: "critical"
+    enabled: true
+    auto_translate: true
+
+# ============================================
+# 优先级定义（3个等级）
+# ============================================
+priorities:
+  critical:
+    name_zh: "紧急"
+    name_en: "Critical"
+    weight: 3
+    description: "最高优先级，立即推送"
+    push_immediately: true
+    
+  high:
+    name_zh: "重要"
+    name_en: "High"
+    weight: 2
+    description: "高优先级，优先推送"
+    push_immediately: true
+    
+  medium:
+    name_zh: "一般"
+    name_en: "Medium"
+    weight: 1
+    description: "中等优先级，定时推送"
+    push_immediately: false
+
+# ============================================
+# 翻译设置
+# ============================================
+translation:
+  # 是否启用自动翻译
+  enabled: true
+  
+  # 翻译服务提供商
+  # 设置为 "default" 表示使用 llm_config.yaml 中的 default_model 配置
+  # 也可以设置为具体的 provider: "openai", "deepl", "google"
+  provider: "default"
+  
+  # API配置（当 provider 为 "default" 时，这些配置会被忽略）
+  # 系统会自动使用 llm_config.yaml 中的 default_model.overrides.translation 配置
+  api_config:
+    # 这些配置仅在 provider 不是 "default" 时使用
+    openai_model: ""  # 留空表示使用默认配置
+    max_tokens: 100
+    temperature: 0.3
+  
+  # 缓存翻译结果
+  cache_enabled: true
+  cache_ttl: 86400  # 24 hours in seconds

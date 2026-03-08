@@ -1,0 +1,47 @@
+# Agent System Configuration
+# 多Agent系统全局配置文件
+# 所有可调整的配置参数统一在此管理
+
+agent_system:
+  # Cache settings - Redis缓存配置
+  cache:
+    enabled: true
+    ttl_seconds: 300  # 5 minutes - 缓存过期时间
+    key_prefix: "agent_config:"  # 缓存键前缀
+  
+  # Hot reload settings - 配置热重载设置
+  hot_reload:
+    enabled: true
+    check_interval_seconds: 5  # 配置变更检测间隔
+    validation_before_reload: true  # 重载前验证配置
+  
+  # Default quotas - 默认资源配额
+  default_quotas:
+    max_api_calls_per_hour: 1000  # 每小时最大API调用次数
+    max_llm_tokens_per_day: 100000  # 每天最大LLM token数
+    max_push_messages_per_hour: 100  # 每小时最大推送消息数
+    max_concurrent_operations: 10  # 最大并发操作数
+    max_db_queries_per_minute: 500  # 每分钟最大数据库查询数
+  
+  # Limits - 系统限制
+  limits:
+    max_config_versions: 100  # 保留最近100个配置版本
+    max_assets_per_agent: 50  # 每个Agent最多监控50个资产
+    max_bot_connections_per_agent: 5  # 每个Agent最多5个Bot连接
+    max_triggers_per_agent: 20  # 每个Agent最多20个触发器
+  
+  # Validation - 配置验证设置
+  validation:
+    strict_mode: true  # 严格模式：拒绝所有无效配置
+    allow_unknown_fields: false  # 不允许未知字段
+  
+  # Export/Import - 导入导出设置
+  export:
+    default_format: "yaml"  # 默认导出格式: yaml 或 json
+    include_metadata: true  # 导出时包含元数据（创建时间、版本等）
+    sanitize_credentials: true  # 导出时清理敏感凭证
+  
+  # Import conflict resolution - 导入冲突解决策略
+  import:
+    default_conflict_resolution: "skip"  # skip, overwrite, create_new
+    validate_before_import: true  # 导入前验证配置

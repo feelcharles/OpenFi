@@ -1,0 +1,91 @@
+# Data Retention Policy Configuration
+# Validates: Requirements 29.1, 29.2
+
+# Retention policies define how long different types of data are kept
+# before being archived or deleted
+
+policies:
+  # Raw data from fetch engine
+  - data_type: raw_data
+    retention_days: 30
+    archive_before_delete: true
+    archive_format: gzip
+    description: "Raw data fetched from external sources"
+  
+  # AI-analyzed signals
+  - data_type: analyzed_signals
+    retention_days: 90
+    archive_before_delete: true
+    archive_format: gzip
+    description: "Signals analyzed by AI engine"
+  
+  # Trade records (keep longer for compliance)
+  - data_type: trade_records
+    retention_days: 365
+    archive_before_delete: true
+    archive_format: gzip
+    soft_delete: true  # Use soft delete for critical records
+    description: "Trading execution records"
+  
+  # Application logs
+  - data_type: logs
+    retention_days: 30
+    archive_before_delete: true
+    archive_format: gzip
+    description: "Application log files"
+  
+  # Vector embeddings
+  - data_type: vector_embeddings
+    retention_days: 90
+    archive_before_delete: false
+    description: "Vector database embeddings"
+  
+  # Notifications
+  - data_type: notifications
+    retention_days: 60
+    archive_before_delete: false
+    description: "Push notification records"
+  
+  # Audit logs (keep longer for compliance)
+  - data_type: audit_logs
+    retention_days: 365
+    archive_before_delete: true
+    archive_format: gzip
+    description: "Security and audit logs"
+
+# Cleanup job schedule
+cleanup_schedule:
+  # Run daily at 03:00 UTC
+  cron: "0 3 * * *"
+  enabled: true
+  
+  # Batch size for deletion (to avoid long-running transactions)
+  batch_size: 1000
+  
+  # Maximum execution time (seconds)
+  max_execution_time: 3600
+
+# Archive settings
+archive:
+  # Base directory for archives
+  base_directory: "archive"
+  
+  # Archive structure: {base_directory}/{data_type}/{year}/{month}/
+  directory_structure: "{base_directory}/{data_type}/{year}/{month}/"
+  
+  # Archive filename format
+  filename_format: "{data_type}_{date}.{format}"
+  
+  # Compression level (1-9, higher = better compression but slower)
+  compression_level: 6
+  
+  # Verify archive integrity after creation
+  verify_integrity: true
+
+# Soft delete settings
+soft_delete:
+  # Column name for soft delete timestamp
+  column_name: "deleted_at"
+  
+  # Include soft-deleted records in cleanup after this many days
+  permanent_delete_after_days: 90

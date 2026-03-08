@@ -1,0 +1,513 @@
+# Bot Commands Configuration
+# Bot 快捷指令配置文件
+# 
+# 用户可以通过这些指令快速操作系统，无需进入 Web 后台
+
+# ============================================
+# 系统命令
+# ============================================
+system_commands:
+  - command: "/status"
+    description: "查看系统和EA运行状态"
+    aliases: ["/s", "/stat"]
+    enabled: true
+    response_format: |
+      📊 系统状态
+      
+      🖥️ 系统运行: { system.status }
+      ⏱️ 运行时长: { system.uptime }
+      💾 内存使用: { system.memory_usage }%
+      
+      🤖 EA状态:
+      {% for ea in running_eas %}
+      • { ea.name }: { ea.status } ({ ea.runtime })
+        盈亏: { ea.pnl }% | 持仓: { ea.positions }
+      {% endfor %}
+      
+      📡 数据源: { data_sources.active }/{ data_sources.total }
+      🧠 LLM: { llm.current_model } ({ llm.status })
+      
+      ⏰ { current_time }
+  
+  - command: "/now"
+    description: "查看重点关注的三个行情现价"
+    aliases: ["/n", "/price"]
+    enabled: true
+    response_format: |
+      💹 重点行情
+      
+      {% for asset in top_assets %}
+      { asset.emoji } { asset.name }
+      💵 现价: { asset.price }
+      📊 涨跌: { asset.change }% { asset.trend_emoji }
+      {% endfor %}
+      
+      ⏰ { current_time }
+
+# ============================================
+# EA 控制命令
+# ============================================
+ea_commands:
+  - command: "/ea_start_{name}"
+    description: "启动指定EA"
+    enabled: true
+    requires_confirmation: true
+    parameters:
+      - name: "duration"
+        type: "string"
+        pattern: "^\\d+[hd]$"
+        description: "运行时长 (例如: 24h, 7d)"
+        required: true
+      - name: "stop_loss"
+        type: "float"
+        description: "止损百分比"
+        required: true
+      - name: "take_profit"
+        type: "float"
+        description: "止盈百分比"
+        required: true
+    response_format: |
+      🤖 启动EA: { ea.name }
+      
+      ⏱️ 运行时长: { duration }
+      🛑 止损: { stop_loss }%
+      🎯 止盈: { take_profit }%
+      
+      ✅ EA已启动，祝交易顺利！
+  
+  - command: "/ea_{name}_end"
+    description: "停止指定EA"
+    aliases: ["/ea_{name}_stop"]
+    enabled: true
+    requires_confirmation: true
+    response_format: |
+      🛑 停止EA: { ea.name }
+      
+      📊 运行总结:
+      • 运行时长: { ea.runtime }
+      • 总盈亏: { ea.total_pnl }%
+      • 交易次数: { ea.total_trades }
+      • 胜率: { ea.win_rate }%
+      
+      ✅ EA已停止
+  
+  - command: "/ea_all_end"
+    description: "停止所有运行中的EA"
+    aliases: ["/stop_all", "/ea_stop_all"]
+    enabled: true
+    requires_confirmation: true
+    response_format: |
+      🛑 停止所有EA
+      
+      {% for ea in stopped_eas %}
+      • { ea.name }: 盈亏 { ea.pnl }%
+      {% endfor %}
+      
+      ✅ 所有EA已停止
+  
+  - command: "/ea_refresh"
+    description: "扫描ea文件夹并更新EA列表"
+    aliases: ["/refresh_ea", "/scan_ea"]
+    enabled: true
+    requires_confirmation: false
+    response_format: |
+      🔄 EA列表刷新完成
+      
+      📊 统计信息:
+      • 总计: { total_eas } 个EA
+      • 新增: { added } 个
+      • 更新: { updated } 个
+      • 移除: { removed } 个
+      
+      🤖 平台分布:
+      • MT4: { platform_stats.mt4 } 个
+      • MT5: { platform_stats.mt5 } 个
+      • TradingView: { platform_stats.tradingview } 个
+      
+      ⏰ { timestamp }
+  
+  - command: "/ea_test"
+    description: "测试指定EA是否有错误，格式: /ea_test {name}"
+    enabled: true
+    requires_confirmation: false
+    response_format: |
+      🧪 EA测试: { ea.name }
+      
+      🤖 平台: { ea.platform }
+      📁 文件: { ea.file_path }
+      ⏱️ 测试时间: { test_duration }
+      
+      {% if test_passed %}
+      ✅ 测试通过，未发现错误
+      {% else %}
+      ❌ 测试失败，发现 { error_count } 个错误
+      
+      📋 错误类型:
+      {% for error_type, count in error_summary.items() %}
+      • { error_type }: { count } 个
+      {% endfor %}
+      
+      💡 详细信息请查看: ea/logs/ea_log_{ ea.id }.txt
+      {% endif %}
+      
+      ⏰ { timestamp }
+
+# ============================================
+# LLM 管理命令
+# ============================================
+llm_commands:
+  - command: "/llm"
+    description: "查看可用的大模型列表和当前使用的模型"
+    aliases: ["/models", "/model"]
+    enabled: true
+    response_format: |
+      🧠 大模型列表
+      
+      📌 当前使用: { current_model.display_name } ({ current_model.type })
+      
+      ⚡ Fast 模型 (快速响应):
+      {% for model in fast_models %}
+      { loop.index }. { model.display_name }
+         提供商: { model.provider }
+         {% if model.is_current %}✅ 当前使用{% endif %}
+      {% endfor %}
+      
+      🎯 Pro 模型 (深度分析):
+      {% for model in pro_models %}
+      { loop.index + fast_models|length }. { model.display_name }
+         提供商: { model.provider }
+         {% if model.is_current %}✅ 当前使用{% endif %}
+      {% endfor %}
+      
+      💡 使用方法:
+      • /llm {编号} - 切换到指定模型
+      • /llm auto - 自动选择模型
+      • /llm fast - 使用默认 fast 模型
+      • /llm pro - 使用默认 pro 模型
+      
+      ⏰ { timestamp }
+  
+  - command: "/llm {number}"
+    description: "切换到指定编号的大模型"
+    enabled: true
+    requires_confirmation: false
+    parameters:
+      - name: "number"
+        type: "integer"
+        description: "模型编号"
+        required: true
+    response_format: |
+      🧠 切换大模型
+      
+      从: { old_model.display_name } ({ old_model.type })
+      到: { new_model.display_name } ({ new_model.type })
+      
+      📊 模型信息:
+      • 提供商: { new_model.provider }
+      • 类型: { new_model.type }
+      • 上下文窗口: { new_model.context_window } tokens
+      • 成本: ${ new_model.cost_per_1k_tokens }/1K tokens
+      
+      ✅ 切换成功
+      
+      ⏰ { timestamp }
+  
+  - command: "/llm auto"
+    description: "启用自动模型选择"
+    aliases: ["/llm a"]
+    enabled: true
+    requires_confirmation: false
+    response_format: |
+      🤖 自动模型选择
+      
+      ✅ 已启用自动选择模式
+      
+      📋 选择策略: { auto_selection.strategy }
+      
+      {% if auto_selection.strategy == "adaptive" %}
+      🎯 自适应策略:
+      • 简单任务 → Fast 模型
+      • 复杂任务 → Pro 模型
+      • 短文本 (< { auto_selection.length_threshold } 字符) → Fast
+      • 长文本 (≥ { auto_selection.length_threshold } 字符) → Pro
+      {% elif auto_selection.strategy == "cost_optimized" %}
+      💰 成本优化策略:
+      • 优先使用 Fast 模型
+      • 仅在必要时使用 Pro 模型
+      {% elif auto_selection.strategy == "performance_optimized" %}
+      ⚡ 性能优化策略:
+      • 优先使用 Pro 模型
+      • 仅简单任务使用 Fast 模型
+      {% endif %}
+      
+      💡 系统将根据任务自动选择最合适的模型
+      
+      ⏰ { timestamp }
+  
+  - command: "/llm fast"
+    description: "切换到默认的 fast 模型"
+    aliases: ["/llm f"]
+    enabled: true
+    requires_confirmation: false
+    response_format: |
+      ⚡ 切换到 Fast 模型
+      
+      { new_model.display_name }
+      • 提供商: { new_model.provider }
+      • 特点: 快速响应，适合简单任务
+      
+      ✅ 切换成功
+      
+      ⏰ { timestamp }
+  
+  - command: "/llm pro"
+    description: "切换到默认的 pro 模型"
+    aliases: ["/llm p"]
+    enabled: true
+    requires_confirmation: false
+    response_format: |
+      🎯 切换到 Pro 模型
+      
+      { new_model.display_name }
+      • 提供商: { new_model.provider }
+      • 特点: 深度分析，适合复杂任务
+      
+      ✅ 切换成功
+      
+      ⏰ { timestamp }
+  
+  - command: "/llm status"
+    description: "查看当前模型使用统计"
+    aliases: ["/llm stat", "/llm s"]
+    enabled: true
+    response_format: |
+      📊 LLM 使用统计
+      
+      📌 当前模型: { current_model.display_name }
+      
+      📈 今日使用:
+      • 请求次数: { stats.today.requests }
+      • Token 消耗: { stats.today.tokens }
+      • 预估成本: ${ stats.today.cost }
+      
+      📅 本月使用:
+      • 请求次数: { stats.month.requests }
+      • Token 消耗: { stats.month.tokens }
+      • 预估成本: ${ stats.month.cost }
+      
+      ⏰ { timestamp }
+
+# ============================================
+# 测试命令
+# ============================================
+test_commands:
+  - command: "/test_all"
+    description: "测试所有功能"
+    aliases: ["/test"]
+    enabled: true
+    response_format: |
+      🧪 系统测试
+      
+      {% for test in tests %}
+      { test.emoji } { test.name }: { test.status }
+      {% endfor %}
+      
+      总计: ✅{{ passed }}/{{ total }}
+  
+  - command: "/test_push"
+    description: "测试推送功能"
+    enabled: true
+    response_format: |
+      📢 推送测试
+      
+      {% for channel in channels %}
+      { channel.emoji } { channel.name }: { channel.status }
+      {% endfor %}
+  
+  - command: "/test_fetch"
+    description: "测试数据接口"
+    enabled: true
+    response_format: |
+      📡 数据接口测试
+      
+      {% for source in sources %}
+      { source.emoji } { source.name }
+      状态: { source.status }
+      请求量: { source.daily_requests }/{ source.daily_limit }
+      月请求: { source.monthly_requests }/{ source.monthly_limit }
+      余额: {{ source.balance }}
+      {% endfor %}
+  
+  - command: "/test_llm"
+    description: "测试大模型"
+    enabled: true
+    response_format: |
+      🧠 大模型测试
+      
+      {% for llm in llms %}
+      { llm.emoji } { llm.name }
+      状态: { llm.status }
+      月使用: { llm.monthly_tokens } tokens
+      余额: { llm.balance }
+      {% endfor %}
+
+# ============================================
+# 设置命令
+# ============================================
+settings_commands:
+  - command: "/lang"
+    description: "切换语言"
+    aliases: ["/language"]
+    enabled: true
+    options: ["zh", "en"]
+    response_format: |
+      🌐 语言设置
+      
+      当前语言: { current_lang }
+      
+      可选语言:
+      • zh - 中文
+      • en - English
+      
+      💡 回复语言代码切换
+
+# ============================================
+# 帮助命令
+# ============================================
+help_commands:
+  - command: "/help"
+    description: "查看所有可用命令"
+    aliases: ["/h", "/?"]
+    enabled: true
+    response_format: |
+      📖 命令帮助
+      
+      🖥️ 系统命令:
+      • /status - 系统状态
+      • /now - 重点行情
+      
+      🤖 EA命令:
+      • /ea_start_{name} - 启动EA
+      • /ea_{name}_end - 停止EA
+      • /ea_all_end - 停止所有EA
+      
+      🧠 LLM命令:
+      • /llm_list - 模型列表
+      • /llm_{name} - 切换模型
+      
+      🧪 测试命令:
+      • /test_all - 测试所有功能
+      • /test_push - 测试推送
+      • /test_fetch - 测试数据接口
+      • /test_llm - 测试大模型
+      
+      ⚙️ 设置命令:
+      • /lang - 切换语言
+      
+      💡 输入命令即可使用
+
+# ============================================
+# 反馈命令
+# ============================================
+feedback_commands:
+  # 点赞/点踩
+  reactions:
+    enabled: true
+    options:
+      - emoji: "👍"
+        value: "good"
+        aliases: ["好", "g", "good"]
+      - emoji: "👎"
+        value: "bad"
+        aliases: ["差", "b", "bad"]
+    
+    # 反馈收集
+    collect_feedback: true
+    feedback_storage: "user_data/profiles/{profile_id}/feedback.json"
+    
+    # AI 优化
+    ai_optimization:
+      enabled: true
+      min_feedback_count: 10  # 最少反馈数量才开始优化
+      optimization_frequency: "daily"  # daily, weekly
+
+# ============================================
+# 命令权限
+# ============================================
+permissions:
+  # 需要确认的命令
+  require_confirmation:
+    - "/ea_start_{name}"
+    - "/ea_{name}_end"
+    - "/ea_all_end"
+  
+  # 管理员专用命令
+  admin_only:
+    - "/test_all"
+    - "/system_restart"
+    - "/clear_cache"
+  
+  # 冷却时间（秒）
+  cooldown:
+    "/test_all": 300  # 5分钟
+    "/test_fetch": 60  # 1分钟
+    "/test_llm": 60  # 1分钟
+
+# ============================================
+# Emoji 映射
+# ============================================
+emoji_map:
+  # 系统状态
+  system:
+    running: "🟢"
+    stopped: "🔴"
+    warning: "🟡"
+    error: "⚠️"
+  
+  # 趋势
+  trend:
+    up: "📈"
+    down: "📉"
+    flat: "➡️"
+  
+  # 货币/资产
+  assets:
+    forex: "💱"
+    gold: "🥇"
+    silver: "🥈"
+    oil: "🛢️"
+    stock: "📊"
+    crypto: "₿"
+  
+  # 国家/地区
+  countries:
+    us: "🇺🇸"
+    eu: "🇪🇺"
+    uk: "🇬🇧"
+    jp: "🇯🇵"
+    cn: "🇨🇳"
+    hk: "🇭🇰"
+  
+  # 状态
+  status:
+    success: "✅"
+    failure: "❌"
+    pending: "⏳"
+    warning: "⚠️"
+  
+  # EA
+  ea:
+    running: "🤖"
+    stopped: "🛑"
+    profit: "💰"
+    loss: "📉"
+    target: "🎯"
+
+# ============================================
+# 备注
+# ============================================
+# 1. 命令格式：/command 或 /command_parameter
+# 2. 别名可以用于快速输入
+# 3. 需要确认的命令会要求用户二次确认
+# 4. 管理员命令需要管理员权限
+# 5. 冷却时间防止命令滥用

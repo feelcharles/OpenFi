@@ -1,0 +1,93 @@
+# 风险控制配置
+# Risk Control Configuration
+
+risk_control:
+  # 止损配置
+  stop_loss:
+    enabled: true
+    threshold: 0.20  # 20% 止损线
+    force_close: true  # 强制平仓
+    notification_priority: high
+    
+  # 止盈配置
+  stop_profit:
+    enabled: true
+    threshold: 0.30  # 30% 止盈线
+    partial_close: true  # 部分平仓
+    partial_ratio: 0.50  # 平仓50%
+    
+  # 仓位管理
+  position_management:
+    max_position_size: 0.10  # 单个持仓最大10%
+    max_total_exposure: 0.80  # 总敞口最大80%
+    max_leverage: 3.0  # 最大杠杆3倍
+    
+  # 风险监控
+  monitoring:
+    check_interval: 5  # 检查间隔（秒）
+    price_update_timeout: 30  # 价格更新超时（秒）
+    alert_threshold: 0.15  # 15%时发出警告
+    
+  # 动态止损
+  trailing_stop:
+    enabled: false
+    activation_profit: 0.10  # 盈利10%后激活
+    trailing_distance: 0.05  # 回撤5%触发
+    
+  # 账户保护
+  account_protection:
+    daily_loss_limit: 0.05  # 单日最大亏损5%
+    weekly_loss_limit: 0.10  # 单周最大亏损10%
+    monthly_loss_limit: 0.20  # 单月最大亏损20%
+    auto_suspend: true  # 达到限额自动暂停交易
+    
+  # 紧急平仓
+  emergency_close:
+    enabled: true
+    triggers:
+      - type: "market_crash"
+        condition: "market_drop > 0.05"  # 市场暴跌5%
+      - type: "system_error"
+        condition: "error_rate > 0.10"  # 错误率超过10%
+      - type: "liquidity_crisis"
+        condition: "spread > 0.02"  # 价差超过2%
+        
+  # 通知配置
+  notifications:
+    channels:
+      - telegram
+      - email
+      - sms  # 紧急情况使用短信
+    alert_levels:
+      warning: 0.15  # 15%亏损警告
+      critical: 0.18  # 18%亏损严重警告
+      emergency: 0.20  # 20%亏损紧急平仓
+
+# 回测风险参数
+backtest_risk:
+  max_drawdown_threshold: 0.25  # 最大回撤25%
+  min_sharpe_ratio: 1.0  # 最小夏普比率1.0
+  min_win_rate: 0.50  # 最小胜率50%
+  
+# 实盘风险参数
+live_trading_risk:
+  require_backtest: true  # 要求先回测
+  min_backtest_days: 90  # 最少回测90天
+  paper_trading_days: 30  # 模拟交易30天
+  gradual_scale_up: true  # 逐步增加仓位
+  
+# 市场条件过滤
+market_conditions:
+  min_volume: 100000  # 最小成交量
+  max_spread: 0.01  # 最大价差1%
+  trading_hours_only: true  # 仅交易时段
+  avoid_earnings: true  # 避开财报期
+  avoid_holidays: true  # 避开节假日
+
+# 审计和合规
+audit:
+  log_all_trades: true
+  log_all_risk_events: true
+  daily_report: true
+  weekly_review: true
+  compliance_check: true

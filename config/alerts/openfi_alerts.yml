@@ -1,0 +1,237 @@
+# Prometheus Alert Rules for OpenFi
+# Validates: Requirement 36.4
+
+groups:
+  - name: openfi_alerts
+    interval: 30s
+    rules:
+      # High Error Rate Alert (>5%)
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(total_fetch_requests_total{status="failed"}[5m])) /
+            sum(rate(total_fetch_requests_total[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: error
+          component: fetch_engine
+        annotations:
+          summary: "High error rate detected in Fetch Engine"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://docs.openfi.ai/runbooks/high-error-rate"
+      
+      # High LLM Error Rate (>5%)
+      - alert: HighLLMErrorRate
+        expr: |
+          (
+            sum(rate(total_llm_calls_total{status="failed"}[5m])) /
+            sum(rate(total_llm_calls_total[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: error
+          component: ai_engine
+        annotations:
+          summary: "High error rate detected in AI Processing Engine"
+          description: "LLM error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://docs.openfi.ai/runbooks/high-error-rate"
+      
+      # High Trade Execution Error Rate (>5%)
+      - alert: HighTradeErrorRate
+        expr: |
+          (
+            sum(rate(total_trades_executed_total{status="failed"}[5m])) /
+            sum(rate(total_trades_executed_total[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: error
+          component: execution_engine
+        annotations:
+          summary: "High error rate detected in Execution Engine"
+          description: "Trade execution error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://docs.openfi.ai/runbooks/high-error-rate"
+      
+      # Low Success Rate Alert (<90%)
+      - alert: LowFetchSuccessRate
+        expr: |
+          (
+            sum(rate(total_fetch_requests_total{status="success"}[5m])) /
+            sum(rate(total_fetch_requests_total[5m]))
+          ) < 0.90
+        for: 5m
+        labels:
+          severity: warning
+          component: fetch_engine
+        annotations:
+          summary: "Low success rate detected in Fetch Engine"
+          description: "Success rate is {{ $value | humanizePercentage }} (threshold: 90%)"
+          runbook_url: "https://docs.openfi.ai/runbooks/low-success-rate"
+      
+      # Low LLM Success Rate (<90%)
+      - alert: LowLLMSuccessRate
+        expr: |
+          (
+            sum(rate(total_llm_calls_total{status="success"}[5m])) /
+            sum(rate(total_llm_calls_total[5m]))
+          ) < 0.90
+        for: 5m
+        labels:
+          severity: warning
+          component: ai_engine
+        annotations:
+          summary: "Low success rate detected in AI Processing Engine"
+          description: "LLM success rate is {{ $value | humanizePercentage }} (threshold: 90%)"
+          runbook_url: "https://docs.openfi.ai/runbooks/low-success-rate"
+      
+      # Low Trade Success Rate (<90%)
+      - alert: LowTradeSuccessRate
+        expr: |
+          (
+            sum(rate(total_trades_executed_total{status="success"}[5m])) /
+            sum(rate(total_trades_executed_total[5m]))
+          ) < 0.90
+        for: 5m
+        labels:
+          severity: warning
+          component: execution_engine
+        annotations:
+          summary: "Low success rate detected in Execution Engine"
+          description: "Trade success rate is {{ $value | humanizePercentage }} (threshold: 90%)"
+          runbook_url: "https://docs.openfi.ai/runbooks/low-success-rate"
+      
+      # High Latency Alert (>5s)
+      - alert: HighFetchLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(fetch_duration_seconds_bucket[5m])) by (le, source_type)) > 5
+        for: 3m
+        labels:
+          severity: warning
+          component: fetch_engine
+        annotations:
+          summary: "High latency detected in Fetch Engine"
+          description: "P95 fetch duration is {{ $value }}s for {{ $labels.source_type }} (threshold: 5s)"
+          runbook_url: "https://docs.openfi.ai/runbooks/high-latency"
+      
+      # High LLM Latency (>5s)
+      - alert: HighLLMLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(llm_response_time_seconds_bucket[5m])) by (le, provider, model)) > 5
+        for: 3m
+        labels:
+          severity: warning
+          component: ai_engine
+        annotations:
+          summary: "High latency detected in LLM calls"
+          description: "P95 LLM response time is {{ $value }}s for {{ $labels.provider }}/{{ $labels.model }} (threshold: 5s)"
+          runbook_url: "https://docs.openfi.ai/runbooks/high-latency"
+      
+      # High Trade Execution Latency (>5s)
+      - alert: HighTradeExecutionLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(trade_execution_time_seconds_bucket[5m])) by (le, broker)) > 5
+        for: 3m
+        labels:
+          severity: warning
+          component: execution_engine
+        annotations:
+          summary: "High latency detected in trade execution"
+          description: "P95 trade execution time is {{ $value }}s for {{ $labels.broker }} (threshold: 5s)"
+          runbook_url: "https://docs.openfi.ai/runbooks/high-latency"
+      
+      # Circuit Breaker Triggered
+      # Note: This would be triggered by application code calling alert manager
+      # when circuit breaker state changes, not by Prometheus directly
+      
+      # Event Bus Queue Depth Exceeded
+      - alert: EventBusQueueDepthHigh
+        expr: event_bus_queue_depth > 8000
+        for: 2m
+        labels:
+          severity: warning
+          component: event_bus
+        annotations:
+          summary: "Event bus queue depth is high"
+          description: "Queue depth for {{ $labels.topic }} is {{ $value }} (threshold: 8000)"
+          runbook_url: "https://docs.openfi.ai/runbooks/queue-depth"
+      
+      # Event Bus Queue Depth Critical
+      - alert: EventBusQueueDepthCritical
+        expr: event_bus_queue_depth > 9500
+        for: 1m
+        labels:
+          severity: critical
+          component: event_bus
+        annotations:
+          summary: "Event bus queue depth is critical"
+          description: "Queue depth for {{ $labels.topic }} is {{ $value }} (threshold: 9500, max: 10000)"
+          runbook_url: "https://docs.openfi.ai/runbooks/queue-depth"
+      
+      # Service Health Checks
+      - alert: ServiceDown
+        expr: up{job="openfi-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "OpenFi service is down"
+          description: "The application has been down for more than 1 minute"
+          runbook_url: "https://docs.openfi.ai/runbooks/service-down"
+      
+      # Low Win Rate Alert
+      - alert: LowTradeWinRate
+        expr: trade_win_rate < 40
+        for: 10m
+        labels:
+          severity: warning
+          component: execution_engine
+        annotations:
+          summary: "Low trade win rate detected"
+          description: "Win rate for {{ $labels.ea_name }} is {{ $value }}% (threshold: 40%)"
+          runbook_url: "https://docs.openfi.ai/runbooks/low-win-rate"
+      
+      # High Notification Failure Rate
+      - alert: HighNotificationFailureRate
+        expr: |
+          (
+            sum(rate(total_notifications_sent_total{status="failed"}[5m])) /
+            sum(rate(total_notifications_sent_total[5m]))
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          component: user_center
+        annotations:
+          summary: "High notification failure rate"
+          description: "Notification failure rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+          runbook_url: "https://docs.openfi.ai/runbooks/notification-failures"
+      
+      # No Signals Generated
+      - alert: NoSignalsGenerated
+        expr: rate(signals_per_hour[30m]) == 0
+        for: 30m
+        labels:
+          severity: warning
+          component: ai_engine
+        annotations:
+          summary: "No signals generated in the last 30 minutes"
+          description: "The system has not generated any signals, which may indicate a problem"
+          runbook_url: "https://docs.openfi.ai/runbooks/no-signals"
+      
+      # Database Connection Issues
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          (
+            sum(rate(database_connection_errors_total[5m])) > 0
+          )
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool issues detected"
+          description: "Database connection errors detected"
+          runbook_url: "https://docs.openfi.ai/runbooks/database-issues"
+
