@@ -112,7 +112,9 @@ check_powershell_policy.bat
 *_replace*.bat
 
 # Temporary Test Scripts (不上传到GitHub)
+# 但保留 test_system.py 作为主要测试文件
 test_*.py
+!test_system.py
 *_test.py
 quick_test.py
 final_test.py
