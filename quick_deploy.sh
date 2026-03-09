@@ -420,9 +420,26 @@ clone_repository() {
     if [[ -d "$INSTALL_DIR" ]]; then
         log_warning "目录已存在，更新代码..."
         cd "$INSTALL_DIR"
-        git pull || {
-            log_warning "Git pull失败，继续使用现有代码"
-        }
+        
+        # 保存本地修改（如果有）
+        git stash save "Auto-stash before deployment $(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+        
+        # 获取最新代码
+        log_info "从远程仓库拉取最新代码..."
+        if ! git pull origin main; then
+            log_error "Git pull失败"
+            log_info "尝试重置并重新拉取..."
+            
+            # 重置到远程状态
+            git fetch origin
+            git reset --hard origin/main || {
+                log_error "无法更新代码仓库"
+                log_info "请手动检查 /opt/openfi 目录"
+                exit 1
+            }
+        fi
+        
+        log_success "代码更新成功"
     else
         git clone https://github.com/feelcharles/OpenFi.git "$INSTALL_DIR" || {
             log_error "克隆代码仓库失败"
@@ -446,6 +463,24 @@ clone_repository() {
         fi
     fi
     
+    # 验证关键文件是否存在
+    log_info "验证关键文件..."
+    local required_files=(
+        "scripts/verify_migrations.py"
+        "scripts/test_db_connection.py"
+        "requirements.txt"
+        "alembic.ini"
+    )
+    
+    for file in "${required_files[@]}"; do
+        if [[ ! -f "$INSTALL_DIR/$file" ]]; then
+            log_error "关键文件缺失: $file"
+            log_info "请检查代码仓库是否完整"
+            exit 1
+        fi
+    done
+    
+    log_success "所有关键文件验证通过"
     log_success "代码仓库准备完成"
 }
 
