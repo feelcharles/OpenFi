@@ -54,16 +54,15 @@ def create_admin():
         cursor.execute("""
             INSERT INTO users (
                 username, email, password_hash, role, 
-                is_active, must_change_password, created_at
+                must_change_password, created_at
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s
             );
         """, (
             'admin',
             'admin@openfi.local',
             admin_password_hash,
             'admin',
-            True,
             True,
             now
         ))
