@@ -845,14 +845,186 @@ EOF
 configure_firewall() {
     log_info "配置防火墙..."
     
+    local firewall_configured=false
+    
+    # 检测并配置firewalld (CentOS/RHEL/Fedora)
     if command -v firewall-cmd &> /dev/null; then
-        firewall-cmd --permanent --add-port=80/tcp 2>/dev/null || true
-        firewall-cmd --permanent --add-port=8686/tcp 2>/dev/null || true
-        firewall-cmd --reload 2>/dev/null || true
+        log_info "检测到firewalld，配置端口..."
+        
+        # 检查firewalld是否运行
+        if systemctl is-active firewalld &> /dev/null; then
+            log_info "firewalld正在运行"
+        else
+            log_info "启动firewalld..."
+            systemctl start firewalld 2>/dev/null || true
+            systemctl enable firewalld 2>/dev/null || true
+            sleep 2
+        fi
+        
+        # 开放端口
+        if firewall-cmd --state &> /dev/null; then
+            log_info "开放HTTP端口 (80)..."
+            firewall-cmd --permanent --add-service=http 2>/dev/null || \
+            firewall-cmd --permanent --add-port=80/tcp 2>/dev/null || true
+            
+            log_info "开放应用端口 (8686)..."
+            firewall-cmd --permanent --add-port=8686/tcp 2>/dev/null || true
+            
+            log_info "重载防火墙规则..."
+            firewall-cmd --reload 2>/dev/null || true
+            
+            # 验证端口已开放
+            if firewall-cmd --list-ports | grep -q "8686"; then
+                log_success "✓ 端口8686已开放"
+                firewall_configured=true
+            else
+                log_warning "✗ 端口8686可能未成功开放"
+            fi
+            
+            if firewall-cmd --list-services | grep -q "http" || firewall-cmd --list-ports | grep -q "80"; then
+                log_success "✓ 端口80已开放"
+            else
+                log_warning "✗ 端口80可能未成功开放"
+            fi
+            
+            # 显示当前规则
+            log_info "当前防火墙规则:"
+            firewall-cmd --list-all | grep -E "ports:|services:" || true
+        else
+            log_warning "firewalld未运行，跳过配置"
+        fi
+    
+    # 检测并配置ufw (Ubuntu/Debian)
     elif command -v ufw &> /dev/null; then
+        log_info "检测到ufw，配置端口..."
+        
+        # 检查ufw状态
+        if ufw status | grep -q "Status: active"; then
+            log_info "ufw正在运行"
+        else
+            log_warning "ufw未启用，将启用防火墙"
+            # 先允许SSH，避免锁定
+            ufw allow 22/tcp 2>/dev/null || true
+        fi
+        
+        # 开放端口
+        log_info "开放HTTP端口 (80)..."
         ufw allow 80/tcp 2>/dev/null || true
+        
+        log_info "开放应用端口 (8686)..."
         ufw allow 8686/tcp 2>/dev/null || true
+        
+        # 如果ufw未启用，询问是否启用
+        if ! ufw status | grep -q "Status: active"; then
+            log_warning "ufw未启用，建议启用以提高安全性"
+            log_info "启用ufw (将保留SSH访问)..."
+            echo "y" | ufw enable 2>/dev/null || true
+        fi
+        
+        # 验证规则
+        if ufw status | grep -q "8686"; then
+            log_success "✓ 端口8686已开放"
+            firewall_configured=true
+        else
+            log_warning "✗ 端口8686可能未成功开放"
+        fi
+        
+        # 显示当前规则
+        log_info "当前防火墙规则:"
+        ufw status numbered | grep -E "80|8686" || true
+    
+    # 检测并配置iptables (传统方式)
+    elif command -v iptables &> /dev/null; then
+        log_info "检测到iptables，配置端口..."
+        
+        # 检查是否已有规则
+        if ! iptables -L INPUT -n | grep -q "dpt:8686"; then
+            log_info "添加iptables规则..."
+            iptables -I INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || true
+            iptables -I INPUT -p tcp --dport 8686 -j ACCEPT 2>/dev/null || true
+            
+            # 保存规则
+            if command -v iptables-save &> /dev/null; then
+                if [[ -f /etc/sysconfig/iptables ]]; then
+                    # CentOS/RHEL
+                    iptables-save > /etc/sysconfig/iptables 2>/dev/null || true
+                elif [[ -f /etc/iptables/rules.v4 ]]; then
+                    # Debian/Ubuntu
+                    iptables-save > /etc/iptables/rules.v4 2>/dev/null || true
+                fi
+            fi
+            
+            firewall_configured=true
+            log_success "✓ iptables规则已添加"
+        else
+            log_info "iptables规则已存在"
+            firewall_configured=true
+        fi
+        
+        # 显示当前规则
+        log_info "当前iptables规则:"
+        iptables -L INPUT -n | grep -E "dpt:80|dpt:8686" || true
+    
+    else
+        log_warning "未检测到防火墙工具 (firewalld/ufw/iptables)"
+        log_warning "如果服务器有防火墙，请手动开放以下端口:"
+        log_warning "  - TCP 80 (HTTP)"
+        log_warning "  - TCP 8686 (应用)"
     fi
+    
+    # 检查SELinux
+    if command -v getenforce &> /dev/null; then
+        local selinux_status=$(getenforce 2>/dev/null || echo "Disabled")
+        
+        if [[ "$selinux_status" == "Enforcing" ]]; then
+            log_info "检测到SELinux (Enforcing模式)，配置端口策略..."
+            
+            # 允许httpd连接网络
+            setsebool -P httpd_can_network_connect 1 2>/dev/null || \
+                log_warning "无法设置httpd_can_network_connect，可能需要手动配置"
+            
+            # 添加端口到http_port_t
+            if command -v semanage &> /dev/null; then
+                semanage port -a -t http_port_t -p tcp 8686 2>/dev/null || \
+                semanage port -m -t http_port_t -p tcp 8686 2>/dev/null || \
+                    log_warning "无法添加SELinux端口策略，可能需要手动配置"
+                
+                log_success "✓ SELinux策略已配置"
+            else
+                log_warning "semanage未安装，无法配置SELinux端口策略"
+                log_info "如果遇到权限问题，请运行: yum install -y policycoreutils-python-utils"
+            fi
+        elif [[ "$selinux_status" == "Permissive" ]]; then
+            log_info "SELinux处于Permissive模式，无需额外配置"
+        else
+            log_info "SELinux已禁用"
+        fi
+    fi
+    
+    # 最终验证
+    echo ""
+    log_info "=== 防火墙配置总结 ==="
+    
+    if $firewall_configured; then
+        log_success "✓ 防火墙已配置"
+        log_info "已开放端口: 80 (HTTP), 8686 (应用)"
+    else
+        log_warning "⚠ 防火墙配置可能不完整"
+    fi
+    
+    # 提供测试命令
+    echo ""
+    log_info "验证端口开放状态:"
+    log_info "  本地测试: curl http://localhost:8686/health"
+    log_info "  远程测试: curl http://YOUR_SERVER_IP:8686/health"
+    echo ""
+    
+    # 云服务器提示
+    log_warning "⚠ 重要提示: 如果使用云服务器 (阿里云/腾讯云/AWS等)"
+    log_warning "   还需要在云控制台的安全组中开放以下端口:"
+    log_warning "   - TCP 80"
+    log_warning "   - TCP 8686"
+    echo ""
     
     log_success "防火墙配置完成"
 }
