@@ -459,21 +459,6 @@ clone_repository() {
         cd "$INSTALL_DIR"
     fi
     
-    # 如果仓库中的部署脚本更新了，使用最新版本重新执行
-    if [[ -f "$INSTALL_DIR/quick_deploy.sh" ]]; then
-        REPO_SCRIPT="$INSTALL_DIR/quick_deploy.sh"
-        CURRENT_SCRIPT="${BASH_SOURCE[0]}"
-        
-        # 比较脚本是否不同
-        if ! cmp -s "$CURRENT_SCRIPT" "$REPO_SCRIPT"; then
-            log_info "检测到部署脚本更新，使用最新版本..."
-            cp "$REPO_SCRIPT" "$CURRENT_SCRIPT"
-            log_info "重新执行更新后的脚本..."
-            exec bash "$CURRENT_SCRIPT"
-            exit 0
-        fi
-    fi
-    
     # 验证关键文件是否存在
     log_info "验证关键文件..."
     local required_files=(
