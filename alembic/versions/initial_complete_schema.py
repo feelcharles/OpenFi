@@ -129,6 +129,7 @@ def upgrade() -> None:
         sa.Column('symbols', postgresql.ARRAY(sa.String), nullable=False),
         sa.Column('timeframe', sa.String(10), nullable=False),
         sa.Column('risk_per_trade', sa.Numeric(5, 4), nullable=False),
+        sa.Column('max_positions', sa.Integer, nullable=False, server_default='1'),
         sa.Column('max_total_risk', sa.Numeric(5, 4), nullable=False),
         sa.Column('strategy_logic_description', sa.Text),
         sa.Column('auto_execution', sa.Boolean, nullable=False, server_default='false'),

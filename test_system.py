@@ -1276,6 +1276,433 @@ class SystemTester:
 
     
     # ========================================================================
+    # 5. 用户工作流测试 - User Workflow Tests
+    # ========================================================================
+    
+    async def test_user_workflow(self):
+        """测试用户完整工作流程"""
+        console.print("\n[bold blue]═══ 5. 用户工作流测试 ═══[/bold blue]\n")
+        
+        workflow_tests = [
+            ("用户创建和认证", self._test_user_creation_and_auth),
+            ("EA配置管理", self._test_ea_profile_management),
+            ("Push通知配置", self._test_push_config_management),
+            ("交易记录管理", self._test_trade_management),
+            ("用户权限控制", self._test_user_permissions),
+            ("数据关联关系", self._test_user_relationships),
+        ]
+        
+        for test_name, test_func in workflow_tests:
+            result = await self.test_module("user_workflow", test_func)
+            self.add_result(result)
+    
+    async def _test_user_creation_and_auth(self):
+        """测试用户创建和认证"""
+        from system_core.database.models import User
+        from system_core.auth.password import PasswordHasher
+        from system_core.auth.jwt_handler import JWTHandler
+        from sqlalchemy import select, delete
+        from uuid import uuid4
+        
+        hasher = PasswordHasher()
+        jwt_handler = JWTHandler()
+        test_username = f"test_user_{uuid4().hex[:8]}"
+        test_password = "test_pass_123"
+        
+        try:
+            # 创建用户
+            async with self.db_manager.get_session() as session:
+                new_user = User(
+                    username=test_username,
+                    email=f"{test_username}@test.com",
+                    password_hash=hasher.hash_password(test_password),
+                    role="trader",
+                    must_change_password=False,
+                    permissions={
+                        "api_access": True,
+                        "llm_access": True,
+                        "trading_access": True
+                    }
+                )
+                session.add(new_user)
+                await session.commit()
+                user_id = new_user.id
+            
+            # JWT认证
+            token = jwt_handler.create_access_token({
+                "sub": test_username,
+                "user_id": str(user_id),
+                "role": "trader"
+            })
+            payload = jwt_handler.decode_token(token)
+            assert payload["sub"] == test_username, "JWT验证失败"
+            
+            # 密码验证
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(User).where(User.id == user_id)
+                )
+                user = result.scalar_one()
+                assert hasher.verify_password(test_password, user.password_hash), "密码验证失败"
+            
+            # 清理
+            async with self.db_manager.get_session() as session:
+                await session.execute(delete(User).where(User.id == user_id))
+                await session.commit()
+                
+        except Exception as e:
+            logger.error(f"用户创建和认证测试失败: {e}")
+            raise
+    
+    async def _test_ea_profile_management(self):
+        """测试EA配置管理"""
+        from system_core.database.models import User, EAProfile
+        from system_core.auth.password import PasswordHasher
+        from sqlalchemy import select, delete
+        from uuid import uuid4
+        
+        hasher = PasswordHasher()
+        test_username = f"test_ea_{uuid4().hex[:8]}"
+        
+        try:
+            # 创建测试用户
+            async with self.db_manager.get_session() as session:
+                user = User(
+                    username=test_username,
+                    email=f"{test_username}@test.com",
+                    password_hash=hasher.hash_password("test123"),
+                    role="trader"
+                )
+                session.add(user)
+                await session.commit()
+                user_id = user.id
+            
+            # 创建EA Profile
+            async with self.db_manager.get_session() as session:
+                ea_profile = EAProfile(
+                    user_id=user_id,
+                    ea_name="测试策略",
+                    symbols=["BTCUSDT", "ETHUSDT"],
+                    timeframe="1h",
+                    risk_per_trade=0.02,
+                    max_positions=3,
+                    max_total_risk=0.10,
+                    auto_execution=True
+                )
+                session.add(ea_profile)
+                await session.commit()
+                ea_id = ea_profile.id
+            
+            # 查询验证
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(EAProfile).where(EAProfile.id == ea_id)
+                )
+                ea = result.scalar_one()
+                assert ea.ea_name == "测试策略", "EA名称不匹配"
+                assert ea.max_positions == 3, "max_positions字段不匹配"
+            
+            # 修改EA参数
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(EAProfile).where(EAProfile.id == ea_id)
+                )
+                ea = result.scalar_one()
+                ea.timeframe = "4h"
+                ea.max_positions = 5
+                await session.commit()
+            
+            # 验证修改
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(EAProfile).where(EAProfile.id == ea_id)
+                )
+                ea = result.scalar_one()
+                assert ea.timeframe == "4h", "时间框架修改失败"
+                assert ea.max_positions == 5, "max_positions修改失败"
+            
+            # 清理
+            async with self.db_manager.get_session() as session:
+                await session.execute(delete(User).where(User.id == user_id))
+                await session.commit()
+                
+        except Exception as e:
+            logger.error(f"EA配置管理测试失败: {e}")
+            raise
+    
+    async def _test_push_config_management(self):
+        """测试Push通知配置"""
+        from system_core.database.models import User, PushConfig
+        from system_core.auth.password import PasswordHasher
+        from sqlalchemy import select, delete
+        from uuid import uuid4
+        
+        hasher = PasswordHasher()
+        test_username = f"test_push_{uuid4().hex[:8]}"
+        
+        try:
+            # 创建测试用户
+            async with self.db_manager.get_session() as session:
+                user = User(
+                    username=test_username,
+                    email=f"{test_username}@test.com",
+                    password_hash=hasher.hash_password("test123"),
+                    role="trader"
+                )
+                session.add(user)
+                await session.commit()
+                user_id = user.id
+            
+            # 创建Push配置
+            async with self.db_manager.get_session() as session:
+                push_config = PushConfig(
+                    user_id=user_id,
+                    channel="telegram",
+                    enabled=True,
+                    credentials={"bot_token": "test_token", "chat_id": "test_chat"},
+                    alert_rules={"trade": True, "alert": True}
+                )
+                session.add(push_config)
+                await session.commit()
+                config_id = push_config.id
+            
+            # 查询验证
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(PushConfig).where(PushConfig.id == config_id)
+                )
+                config = result.scalar_one()
+                assert config.channel == "telegram", "Push渠道不匹配"
+                assert config.enabled == True, "Push状态不匹配"
+            
+            # 清理
+            async with self.db_manager.get_session() as session:
+                await session.execute(delete(User).where(User.id == user_id))
+                await session.commit()
+                
+        except Exception as e:
+            logger.error(f"Push配置管理测试失败: {e}")
+            raise
+    
+    async def _test_trade_management(self):
+        """测试交易记录管理"""
+        from system_core.database.models import User, EAProfile, Trade
+        from system_core.auth.password import PasswordHasher
+        from sqlalchemy import select, delete
+        from uuid import uuid4
+        
+        hasher = PasswordHasher()
+        test_username = f"test_trade_{uuid4().hex[:8]}"
+        
+        try:
+            # 创建测试用户和EA
+            async with self.db_manager.get_session() as session:
+                user = User(
+                    username=test_username,
+                    email=f"{test_username}@test.com",
+                    password_hash=hasher.hash_password("test123"),
+                    role="trader"
+                )
+                session.add(user)
+                await session.commit()
+                user_id = user.id
+                
+                ea_profile = EAProfile(
+                    user_id=user_id,
+                    ea_name="交易测试",
+                    symbols=["BTCUSDT"],
+                    timeframe="1h",
+                    risk_per_trade=0.02,
+                    max_positions=1,
+                    max_total_risk=0.10,
+                    auto_execution=False
+                )
+                session.add(ea_profile)
+                await session.commit()
+                ea_id = ea_profile.id
+            
+            # 创建交易记录
+            async with self.db_manager.get_session() as session:
+                trade = Trade(
+                    user_id=user_id,
+                    ea_profile_id=ea_id,
+                    signal_id=uuid4(),
+                    symbol="BTCUSDT",
+                    direction="buy",
+                    volume=0.1,
+                    entry_price=50000.0,
+                    execution_price=50010.0,
+                    status="closed",
+                    pnl=100.0
+                )
+                session.add(trade)
+                await session.commit()
+                trade_id = trade.id
+            
+            # 查询验证
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(Trade).where(Trade.id == trade_id)
+                )
+                trade = result.scalar_one()
+                assert trade.symbol == "BTCUSDT", "交易对不匹配"
+                assert trade.pnl == 100.0, "盈亏不匹配"
+            
+            # 清理
+            async with self.db_manager.get_session() as session:
+                await session.execute(delete(User).where(User.id == user_id))
+                await session.commit()
+                
+        except Exception as e:
+            logger.error(f"交易记录管理测试失败: {e}")
+            raise
+    
+    async def _test_user_permissions(self):
+        """测试用户权限控制"""
+        from system_core.database.models import User
+        from system_core.auth.password import PasswordHasher
+        from sqlalchemy import select, delete
+        from uuid import uuid4
+        
+        hasher = PasswordHasher()
+        test_username = f"test_perm_{uuid4().hex[:8]}"
+        
+        try:
+            # 创建用户with权限
+            async with self.db_manager.get_session() as session:
+                user = User(
+                    username=test_username,
+                    email=f"{test_username}@test.com",
+                    password_hash=hasher.hash_password("test123"),
+                    role="trader",
+                    permissions={
+                        "api_access": True,
+                        "llm_access": False,
+                        "trading_access": True
+                    }
+                )
+                session.add(user)
+                await session.commit()
+                user_id = user.id
+            
+            # 验证权限
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(User).where(User.id == user_id)
+                )
+                user = result.scalar_one()
+                assert user.permissions.get("api_access") == True, "API权限不匹配"
+                assert user.permissions.get("llm_access") == False, "LLM权限不匹配"
+            
+            # 修改权限
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(User).where(User.id == user_id)
+                )
+                user = result.scalar_one()
+                user.permissions["llm_access"] = True
+                await session.commit()
+            
+            # 验证修改
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(User).where(User.id == user_id)
+                )
+                user = result.scalar_one()
+                assert user.permissions.get("llm_access") == True, "权限修改失败"
+            
+            # 清理
+            async with self.db_manager.get_session() as session:
+                await session.execute(delete(User).where(User.id == user_id))
+                await session.commit()
+                
+        except Exception as e:
+            logger.error(f"用户权限控制测试失败: {e}")
+            raise
+    
+    async def _test_user_relationships(self):
+        """测试用户数据关联关系"""
+        from system_core.database.models import User, EAProfile, PushConfig
+        from system_core.auth.password import PasswordHasher
+        from sqlalchemy import select, delete
+        from uuid import uuid4
+        
+        hasher = PasswordHasher()
+        test_username = f"test_rel_{uuid4().hex[:8]}"
+        
+        try:
+            # 创建用户及关联数据
+            async with self.db_manager.get_session() as session:
+                user = User(
+                    username=test_username,
+                    email=f"{test_username}@test.com",
+                    password_hash=hasher.hash_password("test123"),
+                    role="trader"
+                )
+                session.add(user)
+                await session.commit()
+                user_id = user.id
+                
+                # 创建多个EA
+                for i in range(2):
+                    ea = EAProfile(
+                        user_id=user_id,
+                        ea_name=f"策略{i+1}",
+                        symbols=["BTCUSDT"],
+                        timeframe="1h",
+                        risk_per_trade=0.02,
+                        max_positions=1,
+                        max_total_risk=0.10,
+                        auto_execution=False
+                    )
+                    session.add(ea)
+                
+                # 创建Push配置
+                push = PushConfig(
+                    user_id=user_id,
+                    channel="telegram",
+                    enabled=True,
+                    credentials={"test": "data"}
+                )
+                session.add(push)
+                await session.commit()
+            
+            # 验证关联关系
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(User).where(User.id == user_id)
+                )
+                user = result.scalar_one()
+                
+                # 通过关联关系访问
+                assert len(user.ea_profiles) == 2, "EA关联数量不匹配"
+                assert len(user.push_configs) == 1, "Push配置关联数量不匹配"
+            
+            # 测试级联删除
+            async with self.db_manager.get_session() as session:
+                await session.execute(delete(User).where(User.id == user_id))
+                await session.commit()
+            
+            # 验证级联删除
+            async with self.db_manager.get_session() as session:
+                result = await session.execute(
+                    select(EAProfile).where(EAProfile.user_id == user_id)
+                )
+                eas = result.scalars().all()
+                assert len(eas) == 0, "EA未被级联删除"
+                
+                result = await session.execute(
+                    select(PushConfig).where(PushConfig.user_id == user_id)
+                )
+                pushes = result.scalars().all()
+                assert len(pushes) == 0, "Push配置未被级联删除"
+                
+        except Exception as e:
+            logger.error(f"用户关联关系测试失败: {e}")
+            raise
+
+    
+    # ========================================================================
     # 报告生成 - Report Generation
     # ========================================================================
     
@@ -1402,13 +1829,14 @@ async def main():
     parser.add_argument("--collaboration", action="store_true", help="测试模块协同")
     parser.add_argument("--frontend", action="store_true", help="测试前端")
     parser.add_argument("--bot", action="store_true", help="测试Bot")
+    parser.add_argument("--user", action="store_true", help="测试用户工作流")
     parser.add_argument("--verbose", "-v", action="store_true", help="详细输出")
     
     args = parser.parse_args()
     
     # 如果没有指定任何测试，默认运行所有测试
     if not any([args.all, args.modules, args.integration, args.eventbus, 
-                args.collaboration, args.frontend, args.bot]):
+                args.collaboration, args.frontend, args.bot, args.user]):
         args.all = True
     
     # 显示欢迎信息
@@ -1437,6 +1865,9 @@ async def main():
         
         if args.all or args.frontend or args.bot:
             await tester.test_frontend_and_bot()
+        
+        if args.all or args.user:
+            await tester.test_user_workflow()
         
         # 生成报告
         exit_code = tester.generate_report()
