@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenFi Lite Dashboard</title>
+    <title>OpenFi 仪表板</title>
     <style>
         * {
             margin: 0;
@@ -211,42 +211,42 @@
 <body>
     <div class="container">
         <header>
-            <h1>OpenFi Lite Dashboard</h1>
+            <h1>OpenFi 实时仪表板</h1>
             <p>
                 <span class="ws-status" id="wsStatus"></span>
-                <span id="wsStatusText">Connecting...</span>
-                <span class="status healthy" id="systemStatus">Loading...</span>
+                <span id="wsStatusText">连接中...</span>
+                <span class="status healthy" id="systemStatus">加载中...</span>
             </p>
         </header>
         
         <div class="grid">
             <div class="card">
-                <h2>System Metrics</h2>
+                <h2>系统指标</h2>
                 <div id="metrics">
-                    <div class="loading">Loading metrics...</div>
+                    <div class="loading">加载指标中...</div>
                 </div>
             </div>
             
             <div class="card">
-                <h2>Today's Performance</h2>
+                <h2>今日表现</h2>
                 <div id="performance">
-                    <div class="loading">Loading performance...</div>
+                    <div class="loading">加载表现数据中...</div>
                 </div>
             </div>
         </div>
         
         <div class="grid">
             <div class="card">
-                <h2>Recent Signals</h2>
+                <h2>最近信号</h2>
                 <div id="signals">
-                    <div class="loading">Loading signals...</div>
+                    <div class="loading">加载信号中...</div>
                 </div>
             </div>
             
             <div class="card">
-                <h2>Recent Trades</h2>
+                <h2>最近交易</h2>
                 <div id="trades">
-                    <div class="loading">Loading trades...</div>
+                    <div class="loading">加载交易中...</div>
                 </div>
             </div>
         </div>
@@ -302,10 +302,10 @@
             
             if (connected) {
                 statusEl.className = 'ws-status ws-connected';
-                textEl.textContent = 'Real-time updates active';
+                textEl.textContent = '实时更新已激活';
             } else {
                 statusEl.className = 'ws-status ws-disconnected';
-                textEl.textContent = 'Disconnected';
+                textEl.textContent = '已断开连接';
             }
         }
         
@@ -314,17 +314,17 @@
             
             switch (message.type) {
                 case 'signal':
-                    showNotification('New Signal', message.data.summary);
+                    showNotification('新信号', message.data.summary);
                     loadSignals();
                     loadMetrics();
                     break;
                 case 'trade':
-                    showNotification('Trade Executed', `${message.data.direction} ${message.data.symbol}`);
+                    showNotification('交易执行', `${message.data.direction} ${message.data.symbol}`);
                     loadTrades();
                     loadMetrics();
                     break;
                 case 'system_event':
-                    showNotification('System Event', message.data.message);
+                    showNotification('系统事件', message.data.message);
                     break;
             }
         }
@@ -345,43 +345,43 @@
         // API calls
         async function loadMetrics() {
             try {
-                const response = await fetch(`${API_BASE}/api/dashboard/metrics`);
+                const response = await fetch(`${API_BASE}/api/v1/dashboard/metrics`);
                 const data = await response.json();
                 
                 document.getElementById('metrics').innerHTML = `
                     <div class="metric">
-                        <span class="metric-label">Active Data Sources</span>
+                        <span class="metric-label">活跃数据源</span>
                         <span class="metric-value">${data.active_data_sources}</span>
                     </div>
                     <div class="metric">
-                        <span class="metric-label">Fetch Success Rate</span>
+                        <span class="metric-label">获取成功率</span>
                         <span class="metric-value">${data.fetch_success_rate}%</span>
                     </div>
                     <div class="metric">
-                        <span class="metric-label">Active Positions</span>
+                        <span class="metric-label">活跃持仓</span>
                         <span class="metric-value">${data.active_positions}</span>
                     </div>
                     <div class="metric">
-                        <span class="metric-label">Account Balance</span>
+                        <span class="metric-label">账户余额</span>
                         <span class="metric-value">$${data.account_balance.toLocaleString()}</span>
                     </div>
                 `;
                 
                 document.getElementById('performance').innerHTML = `
                     <div class="metric">
-                        <span class="metric-label">Signals Today</span>
+                        <span class="metric-label">今日信号</span>
                         <span class="metric-value">${data.signals_today}</span>
                     </div>
                     <div class="metric">
-                        <span class="metric-label">High-Value Signals</span>
+                        <span class="metric-label">高价值信号</span>
                         <span class="metric-value">${data.high_value_signals_today}</span>
                     </div>
                     <div class="metric">
-                        <span class="metric-label">Trades Today</span>
+                        <span class="metric-label">今日交易</span>
                         <span class="metric-value">${data.trades_today}</span>
                     </div>
                     <div class="metric">
-                        <span class="metric-label">Win Rate</span>
+                        <span class="metric-label">胜率</span>
                         <span class="metric-value">${data.win_rate_today}%</span>
                     </div>
                 `;
@@ -392,11 +392,11 @@
         
         async function loadSignals() {
             try {
-                const response = await fetch(`${API_BASE}/api/dashboard/recent-signals?limit=5`);
+                const response = await fetch(`${API_BASE}/api/v1/dashboard/recent-signals?limit=5`);
                 const signals = await response.json();
                 
                 if (signals.length === 0) {
-                    document.getElementById('signals').innerHTML = '<p class="loading">No recent signals</p>';
+                    document.getElementById('signals').innerHTML = '<p class="loading">暂无最近信号</p>';
                     return;
                 }
                 
@@ -424,11 +424,11 @@
         
         async function loadTrades() {
             try {
-                const response = await fetch(`${API_BASE}/api/trades?limit=5`);
+                const response = await fetch(`${API_BASE}/api/v1/trades?limit=5`);
                 const trades = await response.json();
                 
                 if (trades.length === 0) {
-                    document.getElementById('trades').innerHTML = '<p class="loading">No recent trades</p>';
+                    document.getElementById('trades').innerHTML = '<p class="loading">暂无最近交易</p>';
                     return;
                 }
                 
@@ -456,7 +456,7 @@
         
         async function loadSystemStatus() {
             try {
-                const response = await fetch(`${API_BASE}/api/dashboard/system-status`);
+                const response = await fetch(`${API_BASE}/api/v1/dashboard/system-status`);
                 const data = await response.json();
                 
                 const statusEl = document.getElementById('systemStatus');
