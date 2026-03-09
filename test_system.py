@@ -178,6 +178,177 @@ class SystemTester:
                 duration=duration,
                 error_message=error_msg
             )
+    
+    # ========================================================================
+    # 数据库完整性检查 - Database Integrity Check
+    # ========================================================================
+    
+    async def check_database_integrity(self):
+        """检查数据库完整性"""
+        console.print("\n[bold blue]═══ 数据库完整性检查 ═══[/bold blue]\n")
+        
+        integrity_tests = [
+            ("字段类型一致性", self._check_field_type_consistency),
+            ("外键约束检查", self._check_foreign_key_constraints),
+            ("模型数据库一致性", self._check_model_db_consistency),
+            ("数据流完整性", self._check_data_flow_integrity),
+        ]
+        
+        for test_name, test_func in integrity_tests:
+            result = await self.test_module("database_integrity", test_func)
+            self.add_result(result)
+    
+    async def _check_field_type_consistency(self):
+        """检查字段类型一致性"""
+        from sqlalchemy import text
+        
+        if not self.db_manager:
+            raise Exception("数据库管理器未初始化")
+        
+        console.print("[dim]检查 user_id 字段类型一致性...[/dim]")
+        
+        async with self.db_manager.get_session() as session:
+            # 检查user_id字段
+            user_id_tables = [
+                'ea_profiles', 'push_configs', 'trades', 'trading_accounts',
+                'notifications', 'alert_rules', 'backtest_results',
+                'factor_combinations', 'audit_logs'
+            ]
+            
+            for table in user_id_tables:
+                result = await session.execute(text(f"""
+                    SELECT data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = '{table}' AND column_name = 'user_id'
+                """))
+                
+                row = result.fetchone()
+                if row and row[0] != 'uuid':
+                    raise Exception(f"{table}.user_id 类型应该是 uuid，当前是 {row[0]}")
+            
+            # 检查symbol字段
+            console.print("[dim]检查 symbol 字段类型一致性...[/dim]")
+            symbol_tables = ['trades', 'factor_values']
+            
+            for table in symbol_tables:
+                result = await session.execute(text(f"""
+                    SELECT data_type, character_maximum_length
+                    FROM information_schema.columns 
+                    WHERE table_name = '{table}' AND column_name = 'symbol'
+                """))
+                
+                row = result.fetchone()
+                if row and (row[0] != 'character varying' or row[1] != 20):
+                    raise Exception(f"{table}.symbol 应该是 VARCHAR(20)")
+    
+    async def _check_foreign_key_constraints(self):
+        """检查外键约束"""
+        from sqlalchemy import text
+        
+        if not self.db_manager:
+            raise Exception("数据库管理器未初始化")
+        
+        console.print("[dim]检查外键约束配置...[/dim]")
+        
+        async with self.db_manager.get_session() as session:
+            # 检查关键外键的CASCADE配置
+            critical_fks = [
+                ('ea_profiles', 'user_id', 'CASCADE'),
+                ('push_configs', 'user_id', 'CASCADE'),
+                ('trades', 'user_id', 'CASCADE'),
+                ('trades', 'ea_profile_id', 'CASCADE'),
+                ('notifications', 'user_id', 'CASCADE'),
+                ('alert_rules', 'user_id', 'CASCADE'),
+            ]
+            
+            for table, column, expected_rule in critical_fks:
+                result = await session.execute(text(f"""
+                    SELECT rc.delete_rule
+                    FROM information_schema.referential_constraints rc
+                    JOIN information_schema.key_column_usage kcu
+                        ON rc.constraint_name = kcu.constraint_name
+                    WHERE kcu.table_name = '{table}' 
+                    AND kcu.column_name = '{column}'
+                """))
+                
+                row = result.fetchone()
+                if row and row[0] != expected_rule:
+                    raise Exception(
+                        f"{table}.{column} 外键删除规则应该是 {expected_rule}，"
+                        f"当前是 {row[0]}"
+                    )
+    
+    async def _check_model_db_consistency(self):
+        """检查模型定义与数据库一致性"""
+        from system_core.database.models import (
+            User, EAProfile, PushConfig, Trade, Signal, Notification
+        )
+        from sqlalchemy import inspect, text
+        
+        if not self.db_manager:
+            raise Exception("数据库管理器未初始化")
+        
+        console.print("[dim]检查模型与数据库一致性...[/dim]")
+        
+        # 检查关键模型
+        models = [User, EAProfile, PushConfig, Trade, Signal, Notification]
+        
+        async with self.db_manager.get_session() as session:
+            for model in models:
+                table_name = model.__tablename__
+                mapper = inspect(model)
+                model_columns = {col.key for col in mapper.columns}
+                
+                # 获取数据库实际的列
+                result = await session.execute(text(f"""
+                    SELECT column_name
+                    FROM information_schema.columns 
+                    WHERE table_name = '{table_name}'
+                """))
+                
+                db_columns = {row[0] for row in result.fetchall()}
+                
+                # 检查模型中定义但数据库中缺失的列
+                missing = model_columns - db_columns
+                if missing:
+                    raise Exception(
+                        f"{model.__name__} 模型中定义了字段 {missing}，"
+                        f"但数据库中不存在"
+                    )
+    
+    async def _check_data_flow_integrity(self):
+        """检查数据流完整性"""
+        from sqlalchemy import text
+        
+        if not self.db_manager:
+            raise Exception("数据库管理器未初始化")
+        
+        console.print("[dim]检查数据流完整性...[/dim]")
+        
+        async with self.db_manager.get_session() as session:
+            # 检查孤立的EA配置
+            result = await session.execute(text("""
+                SELECT COUNT(*) 
+                FROM ea_profiles ep
+                LEFT JOIN users u ON ep.user_id = u.id
+                WHERE u.id IS NULL
+            """))
+            
+            orphan_count = result.scalar()
+            if orphan_count > 0:
+                raise Exception(f"发现 {orphan_count} 个孤立的EA配置（用户不存在）")
+            
+            # 检查孤立的交易记录
+            result = await session.execute(text("""
+                SELECT COUNT(*) 
+                FROM trades t
+                LEFT JOIN ea_profiles ep ON t.ea_profile_id = ep.id
+                WHERE ep.id IS NULL
+            """))
+            
+            orphan_count = result.scalar()
+            if orphan_count > 0:
+                raise Exception(f"发现 {orphan_count} 个孤立的交易记录（EA配置不存在）")
 
     
     # ========================================================================
@@ -1562,6 +1733,7 @@ class SystemTester:
         from system_core.database.models import User
         from system_core.auth.password import PasswordHasher
         from sqlalchemy import select, delete
+        from sqlalchemy.orm.attributes import flag_modified
         from uuid import uuid4
         
         hasher = PasswordHasher()
@@ -1594,13 +1766,15 @@ class SystemTester:
                 assert user.permissions.get("api_access") == True, "API权限不匹配"
                 assert user.permissions.get("llm_access") == False, "LLM权限不匹配"
             
-            # 修改权限
+            # 修改权限 - 使用flag_modified
             async with self.db_manager.get_session() as session:
                 result = await session.execute(
                     select(User).where(User.id == user_id)
                 )
                 user = result.scalar_one()
                 user.permissions["llm_access"] = True
+                # 标记JSONB字段已修改
+                flag_modified(user, "permissions")
                 await session.commit()
             
             # 验证修改
@@ -1625,6 +1799,7 @@ class SystemTester:
         from system_core.database.models import User, EAProfile, PushConfig
         from system_core.auth.password import PasswordHasher
         from sqlalchemy import select, delete
+        from sqlalchemy.orm import selectinload
         from uuid import uuid4
         
         hasher = PasswordHasher()
@@ -1667,10 +1842,15 @@ class SystemTester:
                 session.add(push)
                 await session.commit()
             
-            # 验证关联关系
+            # 验证关联关系 - 使用selectinload预加载
             async with self.db_manager.get_session() as session:
                 result = await session.execute(
-                    select(User).where(User.id == user_id)
+                    select(User)
+                    .options(
+                        selectinload(User.ea_profiles),
+                        selectinload(User.push_configs)
+                    )
+                    .where(User.id == user_id)
                 )
                 user = result.scalar_one()
                 
@@ -1818,6 +1998,7 @@ async def main():
   python test_system.py --eventbus         # 仅测试事件总线
   python test_system.py --frontend         # 仅测试前端
   python test_system.py --bot              # 仅测试Bot
+  python test_system.py --db-check         # 仅检查数据库完整性
   python test_system.py --verbose          # 详细输出
         """
     )
@@ -1830,13 +2011,14 @@ async def main():
     parser.add_argument("--frontend", action="store_true", help="测试前端")
     parser.add_argument("--bot", action="store_true", help="测试Bot")
     parser.add_argument("--user", action="store_true", help="测试用户工作流")
+    parser.add_argument("--db-check", action="store_true", help="检查数据库完整性")
     parser.add_argument("--verbose", "-v", action="store_true", help="详细输出")
     
     args = parser.parse_args()
     
     # 如果没有指定任何测试，默认运行所有测试
     if not any([args.all, args.modules, args.integration, args.eventbus, 
-                args.collaboration, args.frontend, args.bot, args.user]):
+                args.collaboration, args.frontend, args.bot, args.user, args.db_check]):
         args.all = True
     
     # 显示欢迎信息
@@ -1852,6 +2034,10 @@ async def main():
     try:
         # 初始化
         await tester.initialize()
+        
+        # 数据库完整性检查（如果指定或all）
+        if args.all or args.db_check:
+            await tester.check_database_integrity()
         
         # 运行测试
         if args.all or args.modules:

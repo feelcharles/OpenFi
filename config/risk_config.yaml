@@ -24,9 +24,17 @@ risk_control:
     
   # 风险监控
   monitoring:
-    check_interval: 5  # 检查间隔（秒）
+    position_check_interval: 5  # 持仓检查间隔（秒）- 用于止损止盈
+    drawdown_check_interval: 1  # 回撤检查间隔（秒）- 高频量化建议0.1-1秒
     price_update_timeout: 30  # 价格更新超时（秒）
     alert_threshold: 0.15  # 15%时发出警告
+    
+  # 高频交易模式（可选）
+  high_frequency_mode:
+    enabled: false  # 启用高频模式
+    drawdown_check_interval: 0.1  # 100毫秒检查一次
+    position_check_interval: 0.5  # 500毫秒检查一次
+    use_event_driven: true  # 使用事件驱动而非轮询
     
   # 动态止损
   trailing_stop:

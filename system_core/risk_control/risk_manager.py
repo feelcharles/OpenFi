@@ -27,6 +27,10 @@ class RiskConfig:
     max_drawdown_percent: float = 0.20  # 最大回撤百分比
     force_close_on_max_drawdown: bool = True  # 达到最大回撤时强制平仓
     force_close_enabled: bool = True
+    position_check_interval: float = 5.0  # 持仓检查间隔（秒）
+    drawdown_check_interval: float = 1.0  # 回撤检查间隔（秒）
+    high_frequency_mode: bool = False  # 高频模式
+    use_event_driven: bool = False  # 使用事件驱动
 
 
 class RiskManager:
@@ -65,7 +69,11 @@ class RiskManager:
                             daily_loss_limit=rm.get("max_daily_loss_percent", 5.0) / 100.0,
                             max_drawdown_percent=rm.get("max_drawdown_percent", 20.0) / 100.0,
                             force_close_on_max_drawdown=rm.get("force_close_on_max_drawdown", True),
-                            force_close_enabled=True
+                            force_close_enabled=True,
+                            position_check_interval=5.0,
+                            drawdown_check_interval=1.0,
+                            high_frequency_mode=False,
+                            use_event_driven=False
                         )
                         break
         
@@ -74,6 +82,12 @@ class RiskManager:
             risk_config = config_manager.get_config("risk_config.yaml")
             if risk_config and "risk_control" in risk_config:
                 rc = risk_config["risk_control"]
+                monitoring = rc.get("monitoring", {})
+                hf_mode = rc.get("high_frequency_mode", {})
+                
+                # 检查是否启用高频模式
+                is_hf_enabled = hf_mode.get("enabled", False)
+                
                 self.config = RiskConfig(
                     stop_loss_threshold=rc.get("stop_loss", {}).get("threshold", 0.20),
                     stop_profit_threshold=rc.get("stop_profit", {}).get("threshold", 0.30),
@@ -82,7 +96,11 @@ class RiskManager:
                     daily_loss_limit=rc.get("account_protection", {}).get("daily_loss_limit", 0.05),
                     max_drawdown_percent=0.20,
                     force_close_on_max_drawdown=True,
-                    force_close_enabled=rc.get("stop_loss", {}).get("force_close", True)
+                    force_close_enabled=rc.get("stop_loss", {}).get("force_close", True),
+                    position_check_interval=hf_mode.get("position_check_interval", monitoring.get("position_check_interval", 5.0)) if is_hf_enabled else monitoring.get("position_check_interval", 5.0),
+                    drawdown_check_interval=hf_mode.get("drawdown_check_interval", monitoring.get("drawdown_check_interval", 1.0)) if is_hf_enabled else monitoring.get("drawdown_check_interval", 1.0),
+                    high_frequency_mode=is_hf_enabled,
+                    use_event_driven=hf_mode.get("use_event_driven", False) if is_hf_enabled else False
                 )
             else:
                 self.config = RiskConfig()
@@ -102,7 +120,12 @@ class RiskManager:
         if self.config.force_close_on_max_drawdown:
             self.drawdown_monitoring_task = asyncio.create_task(self._monitor_drawdown())
         
-        logger.info("risk_manager_initialized", account_id=self.account_id, config=self.config)
+        logger.info(
+            "risk_manager_initialized",
+            account_id=self.account_id,
+            config=self.config,
+            mode="high_frequency" if self.config.high_frequency_mode else "normal"
+        )
     
     async def close(self):
         """关闭风险管理器"""
@@ -196,6 +219,8 @@ class RiskManager:
     async def _monitor_position(self, order_id: str):
         """监控单个持仓"""
         try:
+            check_interval = self.config.position_check_interval
+            
             while self.is_running and order_id in self.positions:
                 position = self.positions[order_id]
                 pnl_percentage = position["pnl_percentage"]
@@ -214,7 +239,7 @@ class RiskManager:
                 elif pnl_percentage <= -0.15:
                     await self._send_warning(order_id, position)
                 
-                await asyncio.sleep(5)  # 每5秒检查一次
+                await asyncio.sleep(check_interval)
                 
         except asyncio.CancelledError:
             logger.info("position_monitoring_cancelled", order_id=order_id)
@@ -349,10 +374,35 @@ class RiskManager:
         if self.current_equity > self.peak_equity:
             self.peak_equity = self.current_equity
             logger.info("peak_equity_updated", equity=self.peak_equity)
+        
+        # 如果启用事件驱动模式，在权益更新时立即检查回撤
+        if self.config.use_event_driven and self.config.force_close_on_max_drawdown:
+            if self.peak_equity > 0 and self.current_equity > 0:
+                drawdown = (self.peak_equity - self.current_equity) / self.peak_equity
+                
+                # 检查是否达到最大回撤
+                if drawdown >= self.config.max_drawdown_percent:
+                    await self._trigger_max_drawdown_close(drawdown)
+                
+                # 警告线（最大回撤的80%）
+                elif drawdown >= self.config.max_drawdown_percent * 0.8:
+                    await self._send_drawdown_warning(drawdown)
     
     async def _monitor_drawdown(self):
         """监控账户回撤"""
         try:
+            check_interval = self.config.drawdown_check_interval
+            
+            # 如果启用事件驱动模式，只在权益更新时检查
+            if self.config.use_event_driven:
+                logger.info("drawdown_monitoring_event_driven_mode")
+                # 事件驱动模式下，检查逻辑在 _on_equity_update 中执行
+                while self.is_running:
+                    await asyncio.sleep(60)  # 保持任务运行，但不做轮询
+                return
+            
+            # 轮询模式
+            logger.info("drawdown_monitoring_polling_mode", interval=check_interval)
             while self.is_running:
                 if self.peak_equity > 0 and self.current_equity > 0:
                     # 计算当前回撤
@@ -367,7 +417,7 @@ class RiskManager:
                     elif drawdown >= self.config.max_drawdown_percent * 0.8:
                         await self._send_drawdown_warning(drawdown)
                 
-                await asyncio.sleep(10)  # 每10秒检查一次
+                await asyncio.sleep(check_interval)
                 
         except asyncio.CancelledError:
             logger.info("drawdown_monitoring_cancelled")

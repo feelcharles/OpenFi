@@ -1,161 +1,158 @@
-# HyperBrain Documentation
-# HyperBrain 文档中心
+# OpenFi 文档中心
+# OpenFi Documentation Center
 
-**Version**: 1.0  
-**Last Updated**: 2026-03-07
-
----
-
-## Documentation Structure | 文档结构
-
-This documentation is organized into three main guides:
-
-本文档分为三个主要指南：
-
-### 1. [Trading Features Guide](Trading_Features_Guide.md) | 交易功能指南
-
-Comprehensive guide for trading-related features:
-- Market Data & Screening (市场数据与筛选)
-- Factor System (因子系统)
-- EA Execution Engine (EA 执行引擎)
-- Backtesting (回测系统)
-- Research Reports (研报生成)
-- Push Notification System (推送通知系统)
-
-### 2. [AI & Agent System Guide](AI_Agent_Guide.md) | AI 与智能体系统指南
-
-Guide for AI and multi-agent system:
-- LLM Integration (LLM 集成)
-- Multi-Agent System (多智能体系统)
-- Agent Configuration (智能体配置)
-- Agent Isolation (智能体隔离)
-- Prompt Management (提示词管理)
-
-### 3. [System Administration Guide](System_Administration_Guide.md) | 系统管理指南
-
-Guide for system setup and administration:
-- System Setup (系统设置)
-- Web Backend (Web 后端)
-- Security (安全)
-- Database Management (数据库管理)
-- Monitoring & Logging (监控与日志)
-- Backup & Recovery (备份与恢复)
-- Configuration Management (配置管理)
+**Version**: 2.0  
+**Last Updated**: 2026-03-09
 
 ---
 
-## Quick Links | 快速链接
+## 主要文档 | Main Documentation
 
-### Getting Started | 快速开始
+### 📘 [用户指南 (User Guide)](USER_GUIDE.md)
 
-1. **Installation**: See [System Administration Guide - System Setup](System_Administration_Guide.md#system-setup)
-2. **First Agent**: See [AI & Agent System Guide - Multi-Agent System](AI_Agent_Guide.md#multi-agent-system)
-3. **First Trade**: See [Trading Features Guide - EA Execution Engine](Trading_Features_Guide.md#ea-execution-engine)
+完整的用户使用指南，包含：
+- 系统概述和快速开始
+- 端到端工作流程详解
+- 风险控制配置（支持高频/低频）
+- 账户管理和风险参数设置
+- 常见问题和最佳实践
 
-### Common Tasks | 常见任务
-
-- **Configure LLM**: [AI & Agent System Guide - LLM Integration](AI_Agent_Guide.md#llm-integration)
-- **Setup Notifications**: [Trading Features Guide - Push Notification System](Trading_Features_Guide.md#push-notification-system)
-- **Backtest Strategy**: [Trading Features Guide - Backtesting](Trading_Features_Guide.md#backtesting)
-- **Manage Security**: [System Administration Guide - Security](System_Administration_Guide.md#security)
-
-### Troubleshooting | 故障排除
-
-Each guide includes a troubleshooting section:
-- [Trading Features - Troubleshooting](Trading_Features_Guide.md#troubleshooting)
-- [AI & Agent System - Troubleshooting](AI_Agent_Guide.md#troubleshooting)
-- [System Administration - Troubleshooting](System_Administration_Guide.md#troubleshooting)
+**推荐所有用户首先阅读此文档**
 
 ---
 
-## Additional Resources | 其他资源
+## 快速链接 | Quick Links
 
-### Project Documentation | 项目文档
+### 核心功能
 
-- **Requirements**: `.kiro/specs/openfi/requirements.md`
-- **Design**: `.kiro/specs/openfi/design.md`
-- **Tasks**: `.kiro/specs/openfi/tasks.md`
-- **README**: `../README.md`
-- **Quick Start**: `../QUICKSTART.md`
+- **账户设置**：[用户指南 - 账户管理](USER_GUIDE.md#账户管理)
+- **风险控制**：[用户指南 - 风险控制配置](USER_GUIDE.md#风险控制配置)
+- **工作流程**：[用户指南 - 端到端工作流程](USER_GUIDE.md#端到端工作流程)
+- **常见问题**：[用户指南 - 常见问题](USER_GUIDE.md#常见问题)
 
-### API Documentation | API 文档
+### Web界面
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **账户设置页面**：http://localhost:8686/account_settings.html
+- **API文档**：http://localhost:8686/docs
+- **ReDoc**：http://localhost:8686/redoc
 
-### Configuration Files | 配置文件
+### 快速开始
 
-All configuration files are in `../config/` directory:
-- `agent_system_config.yaml` - Agent system configuration
-- `ea_config.yaml` - EA execution configuration
-- `factor_config.yaml` - Factor system configuration
-- `fetch_sources.yaml` - Data source configuration
-- `llm_config.yaml` - LLM provider configuration
-- `push_config.yaml` - Notification configuration
-- `security_config.yaml` - Security configuration
+1. **启动系统**：运行 `start.bat` (Windows) 或 `./start.sh` (Linux/Mac)
+2. **访问界面**：打开 http://localhost:8686/account_settings.html
+3. **配置账户**：设置风险参数并启用账户
+4. **开始交易**：系统自动执行工作流程
 
 ---
 
-## Documentation Conventions | 文档约定
+## 系统测试 | System Testing
 
-### Language | 语言
+### 运行测试
 
-- **Primary Language**: English
-- **Secondary Language**: Chinese (中文注释)
-- All documents are bilingual with English as the primary language
+```bash
+# 运行所有测试
+python test_system.py --all
 
-- **主要语言**: 英文
-- **次要语言**: 中文（注释）
-- 所有文档均为双语，以英文为主
+# 运行数据库完整性检查
+python test_system.py --db-check
 
-### Code Examples | 代码示例
+# 详细输出
+python test_system.py --all --verbose
+```
 
-All code examples are tested and ready to use:
+### 演示脚本
+
+```bash
+# 风险控制演示
+python examples/account_risk_demo.py
+
+# 完整工作流演示
+python examples/complete_workflow_example.py
+```
+
+---
+
+## 配置文件 | Configuration Files
+
+所有配置文件位于 `../config/` 目录：
+
+### 核心配置
+
+- `accounts.yaml` - 账户配置（包含风险参数）
+- `risk_config.yaml` - 风险控制配置（监控间隔等）
+- `ea_config.yaml` - EA执行配置
+- `factor_config.yaml` - 因子系统配置
+
+### 其他配置
+
+- `llm_config.yaml` - LLM提供商配置
+- `push_config.yaml` - 推送通知配置
+- `security_config.yaml` - 安全配置
+- `fetch_sources.yaml` - 数据源配置
+- `agent_system_config.yaml` - 智能体系统配置
+
+---
+
+## 文档约定 | Documentation Conventions
+
+### 语言 | Language
+
+- **主要语言**：中文
+- **次要语言**：英文
+- 所有文档均为双语
+
+### 代码示例 | Code Examples
+
+所有代码示例均已测试，可直接使用：
 
 ```python
-# Example code is production-ready
-from system_core.agent_system.manager import AgentManager
+# 示例代码可直接运行
+from system_core.risk_control.risk_manager import RiskManager
 
-manager = AgentManager()
-agent_id = await manager.create_agent(config)
+risk_manager = RiskManager(account_id="mt4_demo_001")
+await risk_manager.initialize()
 ```
 
-### Configuration Examples | 配置示例
+### 配置示例 | Configuration Examples
 
-Configuration examples use YAML format:
+配置示例使用YAML格式：
 
 ```yaml
-# Configuration examples are complete and valid
-agents:
-  default_config:
-    max_positions: 5
-    max_daily_loss: 1000
+# 配置示例完整且有效
+risk_management:
+  max_drawdown_percent: 20.0
+  force_close_on_max_drawdown: true
 ```
 
 ---
 
-## Contributing | 贡献
+## 其他资源 | Additional Resources
 
-To contribute to documentation:
+### 项目文档
 
-1. Follow the existing structure
-2. Use bilingual format (English + Chinese)
-3. Include code examples
-4. Test all examples before submitting
-5. Update this README if adding new documents
+- **主README**：`../README.md`
+- **快速部署**：`../QUICK_DEPLOY.md`
+- **部署指南**：`../DEPLOYMENT.md`
+- **数据库完整性**：`../DATABASE_INTEGRITY_GUIDE.md`
+- **API文档**：`../API.md`
 
----
+### 在线资源
 
-## Support | 支持
-
-For questions or issues:
-
-- **GitHub Issues**: https://github.com/feelcharles/OpenFi/issues
-- **Email**: support@openfi.local
-- **Documentation**: This directory
+- **GitHub仓库**：https://github.com/feelcharles/OpenFi
+- **问题反馈**：https://github.com/feelcharles/OpenFi/issues
 
 ---
 
-**Document Version**: 1.0  
-**Last Review**: 2026-03-07  
-**Next Review**: 2026-06-07
+## 支持 | Support
+
+如有问题或建议：
+
+- **GitHub Issues**：https://github.com/feelcharles/OpenFi/issues
+- **Email**：support@openfi.local
+- **文档目录**：本目录
+
+---
+
+**文档版本**：2.0  
+**最后审查**：2026-03-09  
+**下次审查**：2026-06-09

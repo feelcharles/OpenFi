@@ -1,9 +1,9 @@
 OpenFi 系统测试报告
 ======================================================================
 
-测试时间: 2026-03-09 10:29:08
-总测试数: 36
-通过: 36
+测试时间: 2026-03-09 11:25:46
+总测试数: 46
+通过: 46
 失败: 0
 错误: 0
 跳过: 0
@@ -11,17 +11,33 @@ OpenFi 系统测试报告
 详细结果:
 ----------------------------------------------------------------------
 
+[database_integrity] _check_field_type_consistency
+  状态: PASS
+  耗时: 0.07s
+
+[database_integrity] _check_foreign_key_constraints
+  状态: PASS
+  耗时: 0.04s
+
+[database_integrity] _check_model_db_consistency
+  状态: PASS
+  耗时: 0.03s
+
+[database_integrity] _check_data_flow_integrity
+  状态: PASS
+  耗时: 0.01s
+
 [config] _test_config_module
   状态: PASS
   耗时: 0.06s
 
 [database] _test_database_module
   状态: PASS
-  耗时: 0.01s
+  耗时: 0.00s
 
 [event_bus] _test_event_bus_module
   状态: PASS
-  耗时: 1.52s
+  耗时: 1.53s
 
 [auth] _test_auth_module
   状态: PASS
@@ -29,11 +45,11 @@ OpenFi 系统测试报告
 
 [ai_engine] _test_ai_engine_module
   状态: PASS
-  耗时: 0.47s
+  耗时: 0.53s
 
 [fetch_engine] _test_fetch_engine_module
   状态: PASS
-  耗时: 0.21s
+  耗时: 0.18s
 
 [factor_system] _test_factor_system_module
   状态: PASS
@@ -41,7 +57,7 @@ OpenFi 系统测试报告
 
 [backtest] _test_backtest_module
   状态: PASS
-  耗时: 0.33s
+  耗时: 0.38s
 
 [execution_engine] _test_execution_engine_module
   状态: PASS
@@ -61,7 +77,7 @@ OpenFi 系统测试报告
 
 [agent_system] _test_agent_system_module
   状态: PASS
-  耗时: 0.11s
+  耗时: 0.13s
 
 [user_center] _test_user_center_module
   状态: PASS
@@ -73,11 +89,11 @@ OpenFi 系统测试报告
 
 [event_bus_integration] _test_event_pub_sub
   状态: PASS
-  耗时: 0.51s
+  耗时: 0.52s
 
 [event_bus_integration] _test_multiple_subscribers
   状态: PASS
-  耗时: 0.51s
+  耗时: 0.52s
 
 [event_bus_integration] _test_event_filtering
   状态: PASS
@@ -85,11 +101,11 @@ OpenFi 系统测试报告
 
 [event_bus_integration] _test_dead_letter_queue
   状态: PASS
-  耗时: 0.51s
+  耗时: 0.52s
 
 [event_bus_integration] _test_end_to_end_workflow
   状态: PASS
-  耗时: 2.51s
+  耗时: 2.52s
 
 [event_bus_integration] _test_event_persistence
   状态: PASS
@@ -97,7 +113,7 @@ OpenFi 系统测试报告
 
 [event_bus_integration] _test_event_retry
   状态: PASS
-  耗时: 2.02s
+  耗时: 2.01s
 
 [module_collaboration] _test_config_sharing
   状态: PASS
@@ -117,11 +133,11 @@ OpenFi 系统测试报告
 
 [module_collaboration] _test_data_flow
   状态: PASS
-  耗时: 1.01s
+  耗时: 1.02s
 
 [module_collaboration] _test_state_synchronization
   状态: PASS
-  耗时: 0.51s
+  耗时: 0.52s
 
 [module_collaboration] _test_resource_management
   状态: PASS
@@ -129,11 +145,11 @@ OpenFi 系统测试报告
 
 [frontend_bot] _test_web_server
   状态: PASS
-  耗时: 3.01s
+  耗时: 3.05s
 
 [frontend_bot] _test_api_endpoints
   状态: PASS
-  耗时: 2.96s
+  耗时: 2.98s
 
 [frontend_bot] _test_websocket
   状态: PASS
@@ -145,7 +161,7 @@ OpenFi 系统测试报告
 
 [frontend_bot] _test_auth_flow
   状态: PASS
-  耗时: 2.93s
+  耗时: 2.92s
 
 [frontend_bot] _test_bot_commands
   状态: PASS
@@ -154,3 +170,27 @@ OpenFi 系统测试报告
 [frontend_bot] _test_bot_responses
   状态: PASS
   耗时: 0.00s
+
+[user_workflow] _test_user_creation_and_auth
+  状态: PASS
+  耗时: 0.61s
+
+[user_workflow] _test_ea_profile_management
+  状态: PASS
+  耗时: 0.31s
+
+[user_workflow] _test_push_config_management
+  状态: PASS
+  耗时: 0.26s
+
+[user_workflow] _test_trade_management
+  状态: PASS
+  耗时: 0.28s
+
+[user_workflow] _test_user_permissions
+  状态: PASS
+  耗时: 0.26s
+
+[user_workflow] _test_user_relationships
+  状态: PASS
+  耗时: 0.28s
