@@ -561,11 +561,30 @@ initialize_database() {
     cd /opt/openfi
     source venv/bin/activate
     
+    # 验证迁移链完整性
+    log_info "验证迁移链完整性..."
+    if ! python scripts/verify_migrations.py; then
+        log_error "迁移链验证失败"
+        log_info "请检查 alembic/versions/ 目录中的迁移文件"
+        exit 1
+    fi
+    log_success "迁移链验证通过"
+    
+    # 测试数据库连接
+    log_info "测试数据库连接..."
+    if ! python scripts/test_db_connection.py; then
+        log_error "数据库连接失败"
+        log_info "请检查 PostgreSQL 服务状态和 .env 配置"
+        exit 1
+    fi
+    log_success "数据库连接正常"
+    
     # 运行数据库迁移
     log_info "运行数据库迁移..."
     if ! alembic upgrade head; then
         log_error "数据库迁移失败"
         log_info "查看详细错误信息，请运行: cd /opt/openfi && source venv/bin/activate && alembic upgrade head"
+        log_info "或查看 MIGRATION_FIX.md 了解常见问题和解决方案"
         exit 1
     fi
     log_success "数据库迁移完成"

@@ -1,7 +1,7 @@
 """Add factor system tables
 
 Revision ID: add_factor_system
-Revises: add_circuit_breaker
+Revises: add_cb_thresholds
 Create Date: 2026-03-06 12:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = 'add_factor_system'
-down_revision: Union[str, None] = 'add_circuit_breaker'
+down_revision: Union[str, None] = 'add_cb_thresholds'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

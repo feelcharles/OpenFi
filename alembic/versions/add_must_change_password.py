@@ -1,7 +1,7 @@
 """add must_change_password to users
 
 Revision ID: add_must_change_password
-Revises: initial_complete_schema
+Revises: add_multi_agent_system
 Create Date: 2024-03-08 12:00:00.000000
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'add_must_change_password'
-down_revision = 'initial_complete_schema'
+down_revision = 'add_multi_agent_system'
 branch_labels = None
 depends_on = None
 

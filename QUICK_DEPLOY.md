@@ -149,6 +149,36 @@ logs/               # Log files
 
 ## 🐛 Troubleshooting
 
+### Database Migration Failed
+If you see `[ERROR] 数据库迁移失败`:
+
+```bash
+# 1. Verify migration chain integrity
+cd /opt/openfi
+source venv/bin/activate
+python scripts/verify_migrations.py
+
+# 2. Test database connection
+python scripts/test_db_connection.py
+
+# 3. If database doesn't exist, create it
+sudo -u postgres psql -c "CREATE DATABASE openfi;"
+sudo -u postgres psql -c "CREATE USER openfi WITH PASSWORD 'openfi_password';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE openfi TO openfi;"
+
+# 4. Run migrations manually
+alembic upgrade head
+
+# 5. If still failing, check detailed error
+alembic current
+alembic history
+```
+
+**Common migration issues**:
+- Database not created → Create database first
+- Wrong credentials → Check `.env` file
+- Migration conflicts → See `MIGRATION_FIX.md` for details
+
 ### Check Python Version
 ```bash
 python3 --version  # Should be 3.11+
