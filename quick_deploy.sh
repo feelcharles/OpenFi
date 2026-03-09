@@ -418,29 +418,40 @@ clone_repository() {
     INSTALL_DIR="/opt/openfi"
     
     if [[ -d "$INSTALL_DIR" ]]; then
-        log_warning "目录已存在，更新代码..."
+        log_warning "目录已存在，强制更新到最新版本..."
         cd "$INSTALL_DIR"
         
-        # 保存本地修改（如果有）
-        git stash save "Auto-stash before deployment $(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
-        
-        # 获取最新代码
-        log_info "从远程仓库拉取最新代码..."
-        if ! git pull origin main; then
-            log_error "Git pull失败"
-            log_info "尝试重置并重新拉取..."
-            
-            # 重置到远程状态
-            git fetch origin
-            git reset --hard origin/main || {
-                log_error "无法更新代码仓库"
-                log_info "请手动检查 /opt/openfi 目录"
+        # 检查是否是git仓库
+        if [[ ! -d ".git" ]]; then
+            log_error "$INSTALL_DIR 不是git仓库，删除并重新克隆..."
+            cd /opt
+            rm -rf openfi
+            git clone https://github.com/feelcharles/OpenFi.git "$INSTALL_DIR" || {
+                log_error "克隆代码仓库失败"
                 exit 1
             }
+            cd "$INSTALL_DIR"
+        else
+            # 强制更新到最新版本（忽略本地修改）
+            log_info "获取远程最新代码..."
+            git fetch origin || {
+                log_error "无法连接到远程仓库"
+                exit 1
+            }
+            
+            log_info "重置到远程最新版本..."
+            git reset --hard origin/main || git reset --hard origin/master || {
+                log_error "无法重置代码仓库"
+                exit 1
+            }
+            
+            # 清理未跟踪的文件
+            git clean -fd || true
         fi
         
         log_success "代码更新成功"
     else
+        log_info "首次部署，克隆代码仓库..."
         git clone https://github.com/feelcharles/OpenFi.git "$INSTALL_DIR" || {
             log_error "克隆代码仓库失败"
             exit 1
