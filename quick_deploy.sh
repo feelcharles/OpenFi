@@ -622,44 +622,7 @@ initialize_database() {
     
     # 创建默认管理员账户
     log_info "创建默认管理员账户..."
-    /opt/openfi/venv/bin/python << 'PYEOF'
-import sys
-sys.path.insert(0, '/opt/openfi')
-
-try:
-    from system_core.database.client import get_db_session
-    from system_core.database.models import User
-    from system_core.auth.password import hash_password
-    from datetime import datetime
-
-    session = next(get_db_session())
-
-    # 检查是否已存在admin用户
-    existing_admin = session.query(User).filter_by(username='admin').first()
-
-    if not existing_admin:
-        admin_user = User(
-            username='admin',
-            email='admin@openfi.local',
-            password_hash=hash_password('admin123'),
-            role='admin',
-            is_active=True,
-            must_change_password=True,
-            created_at=datetime.utcnow()
-        )
-        session.add(admin_user)
-        session.commit()
-        print("默认管理员账户创建成功")
-    else:
-        print("管理员账户已存在")
-
-    session.close()
-except Exception as e:
-    print(f"创建管理员账户失败: {e}")
-    sys.exit(1)
-PYEOF
-    
-    if [ $? -ne 0 ]; then
+    if ! python scripts/create_admin.py; then
         log_error "管理员账户创建失败"
         exit 1
     fi
